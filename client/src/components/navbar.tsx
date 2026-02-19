@@ -14,22 +14,9 @@ export function Navbar() {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "About", href: "/#about" },
-    { label: "Contact", href: "/#contact" },
+    { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ];
-
-  const handleNavClick = (href: string) => {
-    setOpen(false);
-    if (href.startsWith("/#")) {
-      const id = href.slice(2);
-      if (location === "/") {
-        const el = document.getElementById(id);
-        el?.scrollIntoView({ behavior: "smooth" });
-      } else {
-        window.location.href = href;
-      }
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
@@ -45,13 +32,8 @@ export function Navbar() {
               key={link.href}
               variant="ghost"
               asChild
-              onClick={() => handleNavClick(link.href)}
             >
-              {link.href.startsWith("/#") ? (
-                <a href={link.href} data-testid={`link-${link.label.toLowerCase()}`}>{link.label}</a>
-              ) : (
-                <Link href={link.href} data-testid={`link-${link.label.toLowerCase()}`}>{link.label}</Link>
-              )}
+              <Link href={link.href} data-testid={`link-${link.label.toLowerCase()}`}>{link.label}</Link>
             </Button>
           ))}
         </nav>
@@ -70,7 +52,7 @@ export function Navbar() {
                 <Link href="/signin">Sign In</Link>
               </Button>
               <Button asChild data-testid="link-signup">
-                <Link href="/register">Sign Up</Link>
+                <Link href="/signup">Sign Up</Link>
               </Button>
             </>
           )}
@@ -97,28 +79,29 @@ export function Navbar() {
                     key={link.href}
                     variant="ghost"
                     className="justify-start"
-                    onClick={() => handleNavClick(link.href)}
                     asChild
+                    onClick={() => setOpen(false)}
                   >
-                    {link.href.startsWith("/#") ? (
-                      <a href={link.href}>{link.label}</a>
-                    ) : (
-                      <Link href={link.href}>{link.label}</Link>
-                    )}
+                    <Link href={link.href}>{link.label}</Link>
                   </Button>
                 ))}
                 <div className="border-t my-2" />
                 {member ? (
-                  <Button asChild onClick={() => setOpen(false)}>
-                    <Link href="/dashboard">Dashboard</Link>
-                  </Button>
+                  <>
+                    <Button asChild onClick={() => setOpen(false)}>
+                      <Link href="/dashboard">Dashboard</Link>
+                    </Button>
+                    <Button variant="ghost" className="justify-start" asChild onClick={() => setOpen(false)}>
+                      <Link href="/profile">Profile</Link>
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button variant="ghost" className="justify-start" asChild onClick={() => setOpen(false)}>
                       <Link href="/signin">Sign In</Link>
                     </Button>
                     <Button asChild onClick={() => setOpen(false)}>
-                      <Link href="/register">Sign Up</Link>
+                      <Link href="/signup">Sign Up</Link>
                     </Button>
                   </>
                 )}

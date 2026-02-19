@@ -12,6 +12,7 @@ export interface IStorage {
   getMemberByPhone(phone: string): Promise<Member | undefined>;
   getAllMembers(): Promise<Member[]>;
   updateMemberStatus(id: string, status: string): Promise<void>;
+  updateMember(id: string, data: Partial<Member>): Promise<Member>;
   deleteMember(id: string): Promise<void>;
 
   createChild(data: InsertChild): Promise<Child>;
@@ -57,6 +58,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateMemberStatus(id: string, status: string): Promise<void> {
     await db.update(members).set({ status }).where(eq(members.id, id));
+  }
+
+  async updateMember(id: string, data: Partial<Member>): Promise<Member> {
+    const { id: _, createdAt, ...updateData } = data as any;
+    const [updated] = await db.update(members).set(updateData).where(eq(members.id, id)).returning();
+    return updated;
   }
 
   async deleteMember(id: string): Promise<void> {

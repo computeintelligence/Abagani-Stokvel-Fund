@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import type { Child, Payment } from "@shared/schema";
 import {
   Shield, Bell, User, Copy, Calendar, CreditCard,
   Download, CheckCircle, AlertCircle, Clock, Plus, Trash2, Edit2, Save, X,
-  FileText, FileSpreadsheet
+  FileText, FileSpreadsheet, ArrowRight, LogOut
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -26,14 +26,16 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  const hasPlan = !!(member?.plan);
+
   const { data: childrenData, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/members", member?.id, "children"],
-    enabled: !!member,
+    enabled: !!member && hasPlan,
   });
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery<Payment[]>({
     queryKey: ["/api/members", member?.id, "payments"],
-    enabled: !!member,
+    enabled: !!member && hasPlan,
   });
 
   if (authLoading) {
@@ -48,8 +50,51 @@ export default function Dashboard() {
   }
 
   if (!member) {
-    navigate("/signin");
-    return null;
+    return <Redirect to="/signin" />;
+  }
+
+  if (!hasPlan) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
+            <Link href="/" className="flex items-center gap-2">
+              <Shield className="h-6 w-6 text-primary" />
+              <span className="font-bold" data-testid="text-dashboard-brand">Abangani NS Group</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" asChild data-testid="link-profile">
+                <Link href="/profile"><User className="h-4 w-4 mr-2" /> Profile</Link>
+              </Button>
+              <Button size="icon" variant="ghost" onClick={logout} data-testid="button-logout">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-4 py-12">
+          <div className="text-center">
+            <Shield className="h-16 w-16 text-primary mx-auto mb-6" />
+            <h1 className="text-2xl font-bold mb-2" data-testid="text-welcome">
+              Welcome, {member.fullName}!
+            </h1>
+            <p className="text-muted-foreground mb-2">Your tracking number:</p>
+            <Badge variant="outline" className="mb-8 text-base" data-testid="badge-tracking">{member.trackingNumber}</Badge>
+            <Card className="p-8">
+              <h2 className="text-xl font-bold mb-3">Choose Your Subscription Plan</h2>
+              <p className="text-muted-foreground mb-6">
+                To start your stokvel journey, select a plan and add your children's details.
+              </p>
+              <Button size="lg" asChild data-testid="button-choose-plan">
+                <Link href="/register">
+                  Choose a Plan <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const plan = Object.values(PLANS).find((p) => p.amount === member.planAmount);
@@ -57,7 +102,7 @@ export default function Dashboard() {
   const unpaidPayments = paymentsData?.filter((p) => p.status === "unpaid") || [];
   const pendingPayments = paymentsData?.filter((p) => p.status === "pending") || [];
   const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
-  const totalExpected = (paymentsData?.length || 0) * member.planAmount;
+  const totalExpected = (paymentsData?.length || 0) * (member.planAmount || 0);
   const progressPercent = totalExpected > 0 ? (totalPaid / totalExpected) * 100 : 0;
 
   const paymentStartDate = new Date(2026, 2, 10);
@@ -78,11 +123,11 @@ export default function Dashboard() {
             <span className="font-bold" data-testid="text-dashboard-brand">Abangani NS Group</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="ghost" data-testid="button-notifications">
-              <Bell className="h-4 w-4" />
+            <Button variant="ghost" asChild data-testid="link-profile">
+              <Link href="/profile"><User className="h-4 w-4 mr-2" /> Profile</Link>
             </Button>
-            <Button size="icon" variant="ghost" onClick={logout} data-testid="button-profile">
-              <User className="h-4 w-4" />
+            <Button size="icon" variant="ghost" onClick={logout} data-testid="button-logout">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -90,7 +135,7 @@ export default function Dashboard() {
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-welcome">Welcome, {member.fullName.split(" ")[0]}</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-welcome">Welcome, {member.fullName}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <Badge variant="secondary" data-testid="badge-plan">{plan?.name || member.plan}</Badge>
             <Badge variant="outline" className="cursor-pointer" onClick={copyTracking} data-testid="badge-tracking">
@@ -136,7 +181,7 @@ export default function Dashboard() {
           <TabsContent value="payments" className="space-y-4 mt-4">
             <PaymentsTab
               payments={paymentsData || []}
-              planAmount={member.planAmount}
+              planAmount={member.planAmount || 0}
               canPay={canPay}
               memberId={member.id}
             />
@@ -162,7 +207,6 @@ function PaymentsTab({ payments, planAmount, canPay, memberId }: {
   memberId: string;
 }) {
   const { toast } = useToast();
-  const [payingMonth, setPayingMonth] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("retailer");
   const [reference, setReference] = useState("");
 
@@ -175,7 +219,6 @@ function PaymentsTab({ payments, planAmount, canPay, memberId }: {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/members", memberId, "payments"] });
       toast({ title: "Payment submitted!", description: "Your payment is pending verification." });
-      setPayingMonth(null);
       setReference("");
     },
     onError: (err: Error) => {
@@ -187,7 +230,7 @@ function PaymentsTab({ payments, planAmount, canPay, memberId }: {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <h3 className="text-lg font-bold">Monthly Payments</h3>
         {canPay && (
           <Badge variant="default" data-testid="badge-pay-active">
@@ -331,7 +374,7 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <h3 className="text-lg font-bold">Children ({childrenList.length})</h3>
         <Button variant="outline" onClick={() => setShowAdd(true)} data-testid="button-add-child-dashboard">
           <Plus className="h-4 w-4 mr-2" />

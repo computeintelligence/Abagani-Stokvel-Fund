@@ -69,8 +69,8 @@ export default function SignIn() {
           </form>
           <div className="text-center mt-4 text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link href="/register" className="text-primary font-semibold" data-testid="link-register">
-              Register here
+            <Link href="/signup" className="text-primary font-semibold" data-testid="link-signup">
+              Sign up here
             </Link>
           </div>
         </Card>

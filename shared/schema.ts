@@ -7,13 +7,14 @@ export const members = pgTable("members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   trackingNumber: text("tracking_number").notNull().unique(),
   fullName: text("full_name").notNull(),
+  surname: text("surname").notNull().default(""),
   phone: text("phone").notNull(),
   address: text("address"),
-  plan: text("plan").notNull(),
-  planAmount: integer("plan_amount").notNull(),
-  adminFee: integer("admin_fee").notNull(),
-  joinMonth: integer("join_month").notNull(),
-  joinYear: integer("join_year").notNull(),
+  plan: text("plan"),
+  planAmount: integer("plan_amount"),
+  adminFee: integer("admin_fee"),
+  joinMonth: integer("join_month"),
+  joinYear: integer("join_year"),
   password: text("password").notNull(),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -71,14 +72,19 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const signupSchema = z.object({
+  fullName: z.string().min(1),
+  surname: z.string().min(1),
+  phone: z.string().min(10),
+  password: z.string().min(6),
+});
+
+export type SignupData = z.infer<typeof signupSchema>;
+
 export const registrationSchema = z.object({
   plan: z.string(),
   planAmount: z.number(),
   adminFee: z.number(),
-  fullName: z.string().min(1),
-  phone: z.string().min(10),
-  address: z.string().optional(),
-  password: z.string().min(6),
   children: z.array(z.object({
     fullName: z.string().min(1),
     school: z.string().min(1),

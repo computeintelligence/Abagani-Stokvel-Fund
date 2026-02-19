@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
-import { registrationSchema, PLANS, MONTHS } from "@shared/schema";
+import { signupSchema, registrationSchema, PLANS, MONTHS } from "@shared/schema";
 import crypto from "crypto";
 
 type PlanKey = keyof typeof PLANS;
@@ -67,8 +67,49 @@ export async function registerRoutes(
     })
   );
 
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/signup", async (req, res) => {
     try {
+      const data = signupSchema.parse(req.body);
+
+      const existing = await storage.getMemberByPhone(data.phone);
+      if (existing) {
+        return res.status(400).json({ message: "Phone number already registered" });
+      }
+
+      const trackingNumber = generateTrackingNumber();
+
+      const member = await storage.createMember({
+        trackingNumber,
+        fullName: data.fullName,
+        surname: data.surname,
+        phone: data.phone,
+        plan: null,
+        planAmount: null,
+        adminFee: null,
+        joinMonth: null,
+        joinYear: null,
+        address: null,
+        password: hashPassword(data.password),
+      });
+
+      (req.session as any).memberId = member.id;
+      res.json(member);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/register", requireAuth, async (req, res) => {
+    try {
+      const memberId = (req.session as any).memberId;
+      const member = await storage.getMemberById(memberId);
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      if (member.plan) {
+        return res.status(400).json({ message: "Already registered with a plan" });
+      }
+
       const data = registrationSchema.parse(req.body);
 
       const planKey = data.plan as PlanKey;
@@ -77,32 +118,22 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid plan selected" });
       }
 
-      const existing = await storage.getMemberByPhone(data.phone);
-      if (existing) {
-        return res.status(400).json({ message: "Phone number already registered" });
-      }
-
-      const trackingNumber = generateTrackingNumber();
       const now = new Date();
       const joinMonth = now.getMonth() + 1;
       const joinYear = now.getFullYear();
 
-      const member = await storage.createMember({
-        trackingNumber,
-        fullName: data.fullName,
-        phone: data.phone,
-        address: data.address || null,
+      const updated = await storage.updateMember(memberId, {
         plan: serverPlan.name,
         planAmount: serverPlan.amount,
         adminFee: serverPlan.adminFee,
         joinMonth,
         joinYear,
-        password: hashPassword(data.password),
+        status: "pending",
       });
 
       for (const childData of data.children) {
         await storage.createChild({
-          memberId: member.id,
+          memberId,
           fullName: childData.fullName,
           school: childData.school,
           grade: childData.grade,
@@ -113,7 +144,7 @@ export async function registerRoutes(
 
       for (let month = 1; month <= 12; month++) {
         await storage.createPayment({
-          memberId: member.id,
+          memberId,
           month,
           year: joinYear,
           amount: serverPlan.amount,
@@ -123,8 +154,7 @@ export async function registerRoutes(
         });
       }
 
-      (req.session as any).memberId = member.id;
-      res.json(member);
+      res.json(updated);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -159,6 +189,21 @@ export async function registerRoutes(
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy(() => {});
     res.json({ ok: true });
+  });
+
+  app.patch("/api/members/:id/profile", requireAuth, requireOwnMember, async (req, res) => {
+    try {
+      const { fullName, surname, phone, address } = req.body;
+      const updateData: any = {};
+      if (fullName) updateData.fullName = fullName;
+      if (surname) updateData.surname = surname;
+      if (phone) updateData.phone = phone;
+      if (address !== undefined) updateData.address = address;
+      const updated = await storage.updateMember(req.params.id, updateData);
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   app.get("/api/members/:id/children", requireAuth, requireOwnMember, async (req, res) => {
