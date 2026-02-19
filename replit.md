@@ -10,11 +10,19 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - **Routing**: Wouter (frontend), Express (backend)
 
 ## Key Pages
-- `/` - Landing page with hero, pricing, about, contact sections
-- `/register` - Multi-step registration wizard (Plan → Parent Info → Children → Summary → Agreement)
+- `/` - Landing page with hero, pricing (3 tiers), how it works, CTA
+- `/about` - About page with "How It Works" steps and "Why Parents Trust Us"
+- `/contact` - Contact page with phone, email, location, business hours, payment methods
+- `/signup` - Simple account creation (Name, Surname, Phone, Password)
 - `/signin` - Login with phone + password
-- `/dashboard` - User dashboard with payment progress, monthly payments, children management, export
+- `/register` - Plan selection wizard (authenticated, no-plan users only) - 4 steps: Plan → Children → Summary → Agreement
+- `/dashboard` - User dashboard with payment progress, monthly payments, children management, export. Shows "Choose a Plan" prompt for users without a plan.
+- `/profile` - View and edit member profile (name, surname, phone, address)
 - `/admin` - Secret admin panel (access code: ABANGANI26)
+
+## Two-Phase Registration Flow
+1. **Signup** (`/signup`): User creates account with Name, Surname, Phone, Password → auto-login → redirect to Dashboard
+2. **Plan Selection** (`/register`): Authenticated user with no plan selects a subscription, adds children, agrees to terms → plan activated → redirect to Dashboard
 
 ## Pricing Tiers
 - Primary School: R195/month (R45 admin, R150 uniform/stationery)
@@ -23,7 +31,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Cashback R1000: R1000/month (R105 admin, R895 withdrawable)
 
 ## Database Tables
-- `members` - Parent/guardian accounts with plan info and tracking numbers
+- `members` - Parent/guardian accounts with plan info (plan fields nullable for two-phase registration), surname field, tracking numbers
 - `children` - Children linked to members with school/grade info
 - `payments` - Monthly payment records (12 per member per year)
 
@@ -34,12 +42,15 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Child update/delete routes verify child belongs to session member (IDOR protection)
 - Admin routes require `x-admin-code: ABANGANI26` header
 - Server-side plan validation prevents price tampering during registration
-- Registration auto-logs in user and redirects to dashboard
+- Signup auto-logs in user and redirects to dashboard
 
 ## API Routes
-- POST `/api/register` - Registration (auto-login)
+- POST `/api/signup` - Simple account creation (auto-login)
+- POST `/api/register` - Plan selection (authenticated, no-plan users only)
 - POST `/api/auth/login` - Login
 - GET `/api/auth/me` - Current user
+- POST `/api/auth/logout` - Logout
+- PATCH `/api/members/:id/profile` - Update profile (name, surname, phone, address)
 - GET/POST `/api/members/:id/children` - Children CRUD (ownership enforced)
 - PATCH/DELETE `/api/children/:id` - Child update/delete (ownership enforced)
 - GET `/api/members/:id/payments` - Payment records
