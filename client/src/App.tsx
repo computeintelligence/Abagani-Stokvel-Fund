@@ -10,6 +10,7 @@ import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import SignUp from "@/pages/signup";
 import SignIn from "@/pages/signin";
+import Welcome from "@/pages/welcome";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/signup" component={SignUp} />
       <Route path="/signin" component={SignIn} />
+      <Route path="/welcome" component={Welcome} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={Profile} />

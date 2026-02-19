@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,22 +8,7 @@ import {
   Users, CheckCircle, GraduationCap, Shield, Heart,
   ArrowRight, Wallet, ShoppingBag, BookOpen
 } from "lucide-react";
-
-function Footer() {
-  return (
-    <footer className="border-t py-8">
-      <div className="max-w-6xl mx-auto px-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Shield className="h-5 w-5 text-primary" />
-          <span className="font-bold">Abangani NS Group</span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Abangani NS Group. All rights reserved.
-        </p>
-      </div>
-    </footer>
-  );
-}
+import { motion } from "framer-motion";
 
 export default function About() {
   return (

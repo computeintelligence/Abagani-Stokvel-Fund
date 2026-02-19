@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +17,7 @@ export default function SignUp() {
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,6 +25,7 @@ export default function SignUp() {
 
   const canSubmit = fullName.trim().length > 0
     && surname.trim().length > 0
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     && phone.trim().length >= 10
     && password.length >= 6
     && password === confirmPassword;
@@ -35,13 +38,14 @@ export default function SignUp() {
       const res = await apiRequest("POST", "/api/signup", {
         fullName,
         surname,
+        email,
         phone,
         password,
       });
       const memberData = await res.json();
       setMemberDirectly(memberData);
       toast({ title: "Account created!", description: "Welcome to Abangani NS Group." });
-      navigate("/dashboard");
+      navigate("/welcome");
     } catch (err: any) {
       toast({ title: "Signup failed", description: err.message, variant: "destructive" });
     } finally {
@@ -78,6 +82,17 @@ export default function SignUp() {
                 onChange={(e) => setSurname(e.target.value)}
                 placeholder="Enter your surname"
                 data-testid="input-signup-surname"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                data-testid="input-signup-email"
               />
             </div>
             <div>
@@ -128,6 +143,7 @@ export default function SignUp() {
           </div>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

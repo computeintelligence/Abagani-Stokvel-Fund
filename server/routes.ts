@@ -4,6 +4,7 @@ import session from "express-session";
 import { storage } from "./storage";
 import { signupSchema, registrationSchema, PLANS, MONTHS } from "@shared/schema";
 import crypto from "crypto";
+import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail } from "./email-service";
 
 type PlanKey = keyof typeof PLANS;
 
@@ -82,6 +83,7 @@ export async function registerRoutes(
         trackingNumber,
         fullName: data.fullName,
         surname: data.surname,
+        email: data.email,
         phone: data.phone,
         plan: null,
         planAmount: null,
@@ -94,6 +96,8 @@ export async function registerRoutes(
 
       (req.session as any).memberId = member.id;
       res.json(member);
+
+      sendWelcomeEmail(data.fullName, data.email).catch(console.error);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -155,6 +159,8 @@ export async function registerRoutes(
       }
 
       res.json(updated);
+
+      sendRegistrationEmail(member.fullName, member.email, member.trackingNumber, serverPlan.name, serverPlan.amount).catch(console.error);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -353,10 +359,39 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/members/:id", requireAdmin, async (req, res) => {
+    try {
+      const { fullName, surname, email, phone, address, plan, planAmount, adminFee, status } = req.body;
+      const updateData: any = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (surname !== undefined) updateData.surname = surname;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (address !== undefined) updateData.address = address;
+      if (plan !== undefined) updateData.plan = plan;
+      if (planAmount !== undefined) updateData.planAmount = planAmount;
+      if (adminFee !== undefined) updateData.adminFee = adminFee;
+      if (status !== undefined) updateData.status = status;
+      const updated = await storage.updateMember(req.params.id, updateData);
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
   app.post("/api/admin/payments/:id/verify", requireAdmin, async (req, res) => {
     try {
+      const allPayments = await storage.getAllPayments();
+      const payment = allPayments.find(p => p.id === req.params.id);
       await storage.updatePaymentStatus(req.params.id, "verified");
       res.json({ ok: true });
+
+      if (payment) {
+        const member = await storage.getMemberById(payment.memberId);
+        if (member?.email) {
+          sendPaymentSuccessEmail(member.fullName, member.email, payment.amount, MONTHS[payment.month - 1], payment.year).catch(console.error);
+        }
+      }
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -368,6 +403,22 @@ export async function registerRoutes(
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/members/:id/send-reminder", requireAdmin, async (req, res) => {
+    try {
+      const member = await storage.getMemberById(req.params.id);
+      if (!member) return res.status(404).json({ message: "Member not found" });
+      if (!member.email) return res.status(400).json({ message: "Member has no email" });
+      const payments = await storage.getPaymentsByMember(member.id);
+      const unpaid = payments.filter(p => p.status === "unpaid");
+      if (unpaid.length === 0) return res.status(400).json({ message: "No unpaid months" });
+      const unpaidMonths = unpaid.map(p => MONTHS[p.month - 1]);
+      await sendPaymentReminderEmail(member.fullName, member.email, member.planAmount || 0, unpaidMonths as string[]);
+      res.json({ ok: true, message: `Reminder sent to ${member.email}` });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 

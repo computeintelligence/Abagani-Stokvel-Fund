@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
+import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -93,6 +94,7 @@ export default function Dashboard() {
             </Card>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -482,6 +484,8 @@ function ExportTab({ memberId }: { memberId: string }) {
           </div>
         </Card>
       </div>
+
+      <Footer />
     </div>
   );
 }

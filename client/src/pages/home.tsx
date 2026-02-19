@@ -3,18 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { PLANS } from "@shared/schema";
 import {
   Shield, GraduationCap, BookOpen, Gift, ArrowRight,
   Users, CheckCircle, Heart, Star, TrendingUp, Wallet
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
       <div className="max-w-6xl mx-auto px-4 py-20 md:py-32 relative">
-        <div className="text-center max-w-3xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-center max-w-3xl mx-auto"
+        >
           <Badge variant="secondary" className="mb-6" data-testid="badge-hero">
             <Star className="h-3 w-3 mr-1" />
             South Africa's Trusted Stokvel Platform
@@ -42,7 +49,7 @@ function HeroSection() {
             <span className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-primary" /> Join any time</span>
             <span className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-primary" /> Trusted by parents</span>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-16 max-w-3xl mx-auto">
           {[
@@ -129,7 +136,7 @@ function PricingSection() {
               <span className="text-muted-foreground">/month</span>
             </div>
             <p className="text-sm text-muted-foreground mb-2">{primary.description}</p>
-            <p className="text-xs text-muted-foreground mb-4">Includes R{primary.adminFee} admin fee</p>
+            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{primary.adminFee} ({Math.round((primary.adminFee / primary.amount) * 100)}%)</p>
             <ul className="text-sm space-y-2 mb-6 flex-1">
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Full school uniforms</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Complete stationery pack</li>
@@ -150,7 +157,7 @@ function PricingSection() {
               <span className="text-muted-foreground">/month</span>
             </div>
             <p className="text-sm text-muted-foreground mb-2">{highschool.description}</p>
-            <p className="text-xs text-muted-foreground mb-4">Includes R{highschool.adminFee} admin fee</p>
+            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{highschool.adminFee} ({Math.round((highschool.adminFee / highschool.amount) * 100)}%)</p>
             <ul className="text-sm space-y-2 mb-6 flex-1">
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Full school uniforms</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Complete stationery pack</li>
@@ -175,8 +182,8 @@ function PricingSection() {
               Cashback plan - withdraw funds at the beginning of the year for school supplies
             </p>
             <div className="text-xs text-muted-foreground space-y-1 mb-4">
-              <p>R500/month: R{cb500.adminFee} admin fee, R{cb500.contribution} withdrawable</p>
-              <p>R1000/month: R{cb1000.adminFee} admin fee, R{cb1000.contribution} withdrawable</p>
+              <p>R500/mo: R{cb500.adminFee} admin ({Math.round((cb500.adminFee / cb500.amount) * 100)}%), R{cb500.contribution} withdrawable</p>
+              <p>R1000/mo: R{cb1000.adminFee} admin ({Math.round((cb1000.adminFee / cb1000.amount) * 100)}%), R{cb1000.contribution} withdrawable</p>
             </div>
             <ul className="text-sm space-y-2 mb-6 flex-1">
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Payment tracking dashboard</li>
@@ -210,22 +217,6 @@ function CTASection() {
         </Button>
       </div>
     </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="border-t py-8">
-      <div className="max-w-6xl mx-auto px-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Shield className="h-5 w-5 text-primary" />
-          <span className="font-bold">Abangani NS Group</span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Abangani NS Group. All rights reserved.
-        </p>
-      </div>
-    </footer>
   );
 }
 

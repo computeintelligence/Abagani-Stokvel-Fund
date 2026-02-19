@@ -202,7 +202,7 @@ export default function Register() {
                         <h3 className="font-bold">{p.name}</h3>
                         <p className="text-sm text-muted-foreground">{p.description}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          R{p.adminFee} admin fee | R{p.contribution} {isCb ? "savings (withdrawable)" : "uniform & stationery"}
+                          R{p.adminFee} admin ({Math.round((p.adminFee / p.amount) * 100)}%) | R{p.contribution} {isCb ? "savings (withdrawable)" : "uniform & stationery"}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">

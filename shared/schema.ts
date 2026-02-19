@@ -8,6 +8,7 @@ export const members = pgTable("members", {
   trackingNumber: text("tracking_number").notNull().unique(),
   fullName: text("full_name").notNull(),
   surname: text("surname").notNull().default(""),
+  email: text("email").notNull().default(""),
   phone: text("phone").notNull(),
   address: text("address"),
   plan: text("plan"),
@@ -75,6 +76,7 @@ export const loginSchema = z.object({
 export const signupSchema = z.object({
   fullName: z.string().min(1),
   surname: z.string().min(1),
+  email: z.string().email(),
   phone: z.string().min(10),
   password: z.string().min(6),
 });
