@@ -61,6 +61,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.set("trust proxy", 1);
   const PgStore = connectPgSimple(session);
   app.use(
     session({
