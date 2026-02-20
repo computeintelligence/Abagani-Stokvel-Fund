@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Shield, UserPlus } from "lucide-react";
 
 export default function SignUp() {
   const [, navigate] = useLocation();
-  const { setMemberDirectly } = useAuth();
+  const { member, setMemberDirectly } = useAuth();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [surname, setSurname] = useState("");
@@ -22,6 +22,13 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const justSignedUp = useRef(false);
+
+  useEffect(() => {
+    if (justSignedUp.current && member) {
+      navigate("/welcome");
+    }
+  }, [member, navigate]);
 
   const canSubmit = fullName.trim().length > 0
     && surname.trim().length > 0
@@ -43,9 +50,9 @@ export default function SignUp() {
         password,
       });
       const memberData = await res.json();
+      justSignedUp.current = true;
       setMemberDirectly(memberData);
       toast({ title: "Account created!", description: "Welcome to Abangani NS Group." });
-      navigate("/welcome");
     } catch (err: any) {
       toast({ title: "Signup failed", description: err.message, variant: "destructive" });
     } finally {

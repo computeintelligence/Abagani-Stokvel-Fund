@@ -13,11 +13,19 @@ import { motion } from "framer-motion";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
-  const { member, login } = useAuth();
+  const { member, isLoading: authLoading, login } = useAuth();
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Shield className="h-10 w-10 text-primary animate-pulse" />
+      </div>
+    );
+  }
 
   if (member) {
     return <Redirect to="/dashboard" />;

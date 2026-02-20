@@ -425,16 +425,101 @@ export async function registerRoutes(
   app.get("/api/admin/export", requireAdmin, async (req, res) => {
     try {
       const members = await storage.getMembersWithDetails();
-      let csv = "Tracking,Name,Phone,Plan,Amount,Status,Children,Paid Months,Unpaid Months\n";
-      for (const m of members) {
-        const paid = m.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
-        const unpaid = m.payments.filter((p) => p.status === "unpaid").length;
-        const childNames = m.children.map((c) => `${c.fullName}(${c.grade})`).join("; ");
-        csv += `${m.trackingNumber},"${m.fullName}",${m.phone},${m.plan},R${m.planAmount},${m.status},"${childNames}",${paid},${unpaid}\n`;
+      const format = (req.query.format as string) || "csv";
+
+      const buildRows = () => {
+        return members.map((m) => {
+          const paid = m.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
+          const unpaid = m.payments.filter((p) => p.status === "unpaid").length;
+          const childNames = m.children.map((c) => `${c.fullName} (${c.grade})`).join("; ");
+          return {
+            tracking: m.trackingNumber,
+            name: m.fullName,
+            surname: m.surname || "",
+            phone: m.phone,
+            email: m.email || "",
+            plan: m.plan || "No plan",
+            amount: m.planAmount ? `R${m.planAmount}` : "N/A",
+            status: m.status,
+            children: childNames || "None",
+            paid: String(paid),
+            unpaid: String(unpaid),
+          };
+        });
+      };
+
+      if (format === "pdf") {
+        const PDFDocument = (await import("pdfkit")).default;
+        const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 30 });
+        const buffers: Buffer[] = [];
+        doc.on("data", (chunk: Buffer) => buffers.push(chunk));
+        doc.on("end", () => {
+          const pdfData = Buffer.concat(buffers);
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", "attachment; filename=abangani-members.pdf");
+          res.send(pdfData);
+        });
+
+        doc.fontSize(16).font("Helvetica-Bold").text("Abangani NS Group - Members Report", { align: "center" });
+        doc.fontSize(9).font("Helvetica").text(`Generated: ${new Date().toLocaleDateString("en-ZA")}`, { align: "center" });
+        doc.moveDown(1);
+
+        const rows = buildRows();
+        const headers = ["Tracking", "Name", "Surname", "Phone", "Plan", "Amount", "Status", "Children", "Paid", "Unpaid"];
+        const colWidths = [70, 75, 65, 80, 70, 55, 55, 130, 35, 40];
+        const startX = 30;
+        let y = doc.y;
+
+        doc.fontSize(8).font("Helvetica-Bold");
+        let x = startX;
+        for (let i = 0; i < headers.length; i++) {
+          doc.text(headers[i], x, y, { width: colWidths[i], lineBreak: false });
+          x += colWidths[i];
+        }
+        y += 15;
+        doc.moveTo(startX, y).lineTo(startX + colWidths.reduce((a, b) => a + b, 0), y).stroke();
+        y += 5;
+
+        doc.font("Helvetica").fontSize(7);
+        for (const row of rows) {
+          if (y > 550) {
+            doc.addPage();
+            y = 30;
+            doc.fontSize(8).font("Helvetica-Bold");
+            x = startX;
+            for (let i = 0; i < headers.length; i++) {
+              doc.text(headers[i], x, y, { width: colWidths[i], lineBreak: false });
+              x += colWidths[i];
+            }
+            y += 15;
+            doc.moveTo(startX, y).lineTo(startX + colWidths.reduce((a, b) => a + b, 0), y).stroke();
+            y += 5;
+            doc.font("Helvetica").fontSize(7);
+          }
+
+          const values = [row.tracking, row.name, row.surname, row.phone, row.plan, row.amount, row.status, row.children, row.paid, row.unpaid];
+          x = startX;
+          for (let i = 0; i < values.length; i++) {
+            doc.text(values[i], x, y, { width: colWidths[i], lineBreak: false });
+            x += colWidths[i];
+          }
+          y += 13;
+        }
+
+        doc.moveDown(2);
+        doc.fontSize(8).font("Helvetica").text(`Total Members: ${rows.length}`, startX);
+
+        doc.end();
+      } else {
+        const rows = buildRows();
+        let csv = "Tracking,Name,Surname,Phone,Email,Plan,Amount,Status,Children,Paid Months,Unpaid Months\n";
+        for (const r of rows) {
+          csv += `${r.tracking},"${r.name}","${r.surname}",${r.phone},"${r.email}",${r.plan},${r.amount},${r.status},"${r.children}",${r.paid},${r.unpaid}\n`;
+        }
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", "attachment; filename=abangani-members.csv");
+        res.send(csv);
       }
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", "attachment; filename=abangani-members.csv");
-      res.send(csv);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

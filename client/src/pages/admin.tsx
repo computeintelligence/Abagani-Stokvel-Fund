@@ -299,6 +299,25 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
     }
   };
 
+  const handleCsvExport = async () => {
+    try {
+      const res = await fetch("/api/admin/export?format=csv", {
+        headers: { "x-admin-code": ADMIN_CODE },
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "abangani-members.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "CSV exported successfully" });
+    } catch {
+      toast({ title: "CSV export failed", variant: "destructive" });
+    }
+  };
+
   const filteredMembers = members?.filter((m) =>
     m.fullName.toLowerCase().includes(search.toLowerCase()) ||
     m.phone.includes(search) ||
@@ -324,7 +343,11 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
           <div className="flex items-center gap-1">
             <Button variant="ghost" onClick={handlePdfExport} data-testid="button-admin-pdf-export">
               <FileText className="h-4 w-4 mr-2" />
-              PDF Export
+              PDF
+            </Button>
+            <Button variant="ghost" onClick={handleCsvExport} data-testid="button-admin-csv-export">
+              <Download className="h-4 w-4 mr-2" />
+              CSV
             </Button>
             <Button size="icon" variant="ghost" onClick={toggleTheme} data-testid="button-admin-theme">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
