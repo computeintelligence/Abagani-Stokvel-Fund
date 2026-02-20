@@ -1,12 +1,19 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
 import { signupSchema, registrationSchema, PLANS, MONTHS } from "@shared/schema";
+import type { Member } from "@shared/schema";
 import crypto from "crypto";
 import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail } from "./email-service";
 
 type PlanKey = keyof typeof PLANS;
+
+function stripPassword(member: Member): Omit<Member, "password"> {
+  const { password, ...rest } = member;
+  return rest;
+}
 
 function generateTrackingNumber(): string {
   const year = new Date().getFullYear();
@@ -54,8 +61,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const PgStore = connectPgSimple(session);
   app.use(
     session({
+      store: new PgStore({
+        conString: process.env.DATABASE_URL,
+        tableName: "session",
+        createTableIfMissing: true,
+      }),
       secret: process.env.SESSION_SECRET!,
       resave: false,
       saveUninitialized: false,
@@ -95,7 +108,7 @@ export async function registerRoutes(
       });
 
       (req.session as any).memberId = member.id;
-      res.json(member);
+      res.json(stripPassword(member));
 
       sendWelcomeEmail(data.fullName, data.email).catch(console.error);
     } catch (err: any) {
@@ -158,7 +171,7 @@ export async function registerRoutes(
         });
       }
 
-      res.json(updated);
+      res.json(stripPassword(updated));
 
       sendRegistrationEmail(member.fullName, member.email, member.trackingNumber, serverPlan.name, serverPlan.amount).catch(console.error);
     } catch (err: any) {
@@ -174,7 +187,7 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid phone number or password" });
       }
       (req.session as any).memberId = member.id;
-      res.json(member);
+      res.json(stripPassword(member));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -189,7 +202,7 @@ export async function registerRoutes(
     if (!member) {
       return res.status(401).json({ message: "Member not found" });
     }
-    res.json(member);
+    res.json(stripPassword(member));
   });
 
   app.post("/api/auth/logout", (req, res) => {
@@ -206,7 +219,7 @@ export async function registerRoutes(
       if (phone) updateData.phone = phone;
       if (address !== undefined) updateData.address = address;
       const updated = await storage.updateMember(req.params.id, updateData);
-      res.json(updated);
+      res.json(stripPassword(updated));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -335,7 +348,10 @@ export async function registerRoutes(
   app.get("/api/admin/members", requireAdmin, async (_req, res) => {
     try {
       const members = await storage.getMembersWithDetails();
-      res.json(members);
+      res.json(members.map(m => {
+        const { password, ...rest } = m;
+        return rest;
+      }));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -373,7 +389,7 @@ export async function registerRoutes(
       if (adminFee !== undefined) updateData.adminFee = adminFee;
       if (status !== undefined) updateData.status = status;
       const updated = await storage.updateMember(req.params.id, updateData);
-      res.json(updated);
+      res.json(stripPassword(updated));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
