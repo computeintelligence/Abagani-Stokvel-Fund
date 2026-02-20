@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { PLANS } from "@shared/schema";
 import {
-  Shield, GraduationCap, BookOpen, Gift, ArrowRight,
+  GraduationCap, BookOpen, ArrowRight,
   Users, CheckCircle, Heart, Star, TrendingUp, Wallet
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -31,7 +31,7 @@ function HeroSection() {
             <span className="text-primary">Future Today</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto" data-testid="text-hero-subtitle">
-            Join Abangani NS Group and save from just R195/month. Your children receive brand-new school uniforms
+            Join Abangani Stokvel Fund and save from just R195/month per child. Your children receive brand-new school uniforms
             and complete stationery packs at the beginning of every school year.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -112,8 +112,7 @@ function HowItWorksSection() {
 function PricingSection() {
   const primary = PLANS.primary;
   const highschool = PLANS.highschool;
-  const cb500 = PLANS.cashback500;
-  const cb1000 = PLANS.cashback1000;
+  const cashback = PLANS.cashback;
 
   return (
     <section id="pricing" className="py-20 bg-card/30">
@@ -124,7 +123,7 @@ function PricingSection() {
             Choose Your Plan
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Affordable plans designed for every family
+            Affordable plans designed for every family. You pay per child added to your plan.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -133,15 +132,15 @@ function PricingSection() {
             <h3 className="text-lg font-bold">{primary.name}</h3>
             <div className="my-4">
               <span className="text-3xl font-bold text-primary">R{primary.amount}</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">/child/month</span>
             </div>
             <p className="text-sm text-muted-foreground mb-2">{primary.description}</p>
-            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{primary.adminFee} ({Math.round((primary.adminFee / primary.amount) * 100)}%)</p>
+            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{primary.adminFee} ({Math.round((primary.adminFee / primary.amount) * 100)}%) per child</p>
             <ul className="text-sm space-y-2 mb-6 flex-1">
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Full school uniforms</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Complete stationery pack</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Payment tracking dashboard</li>
-              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Flexible payment methods</li>
+              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Pay per child</li>
             </ul>
             <Button asChild className="w-full" data-testid="button-select-primary">
               <Link href="/signup">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -154,15 +153,15 @@ function PricingSection() {
             <h3 className="text-lg font-bold">{highschool.name}</h3>
             <div className="my-4">
               <span className="text-3xl font-bold text-primary">R{highschool.amount}</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">/child/month</span>
             </div>
             <p className="text-sm text-muted-foreground mb-2">{highschool.description}</p>
-            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{highschool.adminFee} ({Math.round((highschool.adminFee / highschool.amount) * 100)}%)</p>
+            <p className="text-xs text-muted-foreground mb-4">Admin fee: R{highschool.adminFee} ({Math.round((highschool.adminFee / highschool.amount) * 100)}%) per child</p>
             <ul className="text-sm space-y-2 mb-6 flex-1">
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Full school uniforms</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Complete stationery pack</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Payment tracking dashboard</li>
-              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Flexible payment methods</li>
+              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Pay per child</li>
             </ul>
             <Button asChild className="w-full" data-testid="button-select-highschool">
               <Link href="/signup">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -173,22 +172,16 @@ function PricingSection() {
             <Wallet className="h-8 w-8 text-primary mb-3" />
             <h3 className="text-lg font-bold">Cashback</h3>
             <div className="my-4">
-              <span className="text-3xl font-bold text-primary">R500</span>
-              <span className="text-muted-foreground"> or </span>
-              <span className="text-3xl font-bold text-primary">R1000</span>
+              <span className="text-3xl font-bold text-primary">From R500</span>
               <span className="text-muted-foreground">/month</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Cashback plan - withdraw funds at the beginning of the year for school supplies
-            </p>
-            <div className="text-xs text-muted-foreground space-y-1 mb-4">
-              <p>R500/mo: R{cb500.adminFee} admin ({Math.round((cb500.adminFee / cb500.amount) * 100)}%), R{cb500.contribution} withdrawable</p>
-              <p>R1000/mo: R{cb1000.adminFee} admin ({Math.round((cb1000.adminFee / cb1000.amount) * 100)}%), R{cb1000.contribution} withdrawable</p>
-            </div>
+            <p className="text-sm text-muted-foreground mb-2">{cashback.description}</p>
+            <p className="text-xs text-muted-foreground mb-4">12% admin fee | Choose any amount from R500 during registration</p>
             <ul className="text-sm space-y-2 mb-6 flex-1">
+              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Choose your own amount</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Payment tracking dashboard</li>
-              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Flexible payment methods</li>
               <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Cashback at year start</li>
+              <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0" /> Flexible payment methods</li>
             </ul>
             <Button asChild className="w-full" data-testid="button-select-cashback">
               <Link href="/signup">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -212,7 +205,7 @@ function CTASection() {
         </p>
         <Button size="lg" asChild data-testid="button-cta-signup">
           <Link href="/signup">
-            Join Abangani NS Group <ArrowRight className="ml-2 h-4 w-4" />
+            Join Abangani Stokvel Fund <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>

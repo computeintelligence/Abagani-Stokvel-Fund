@@ -57,7 +57,7 @@ export default function SignIn() {
           <div className="text-center mb-8">
             <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
             <h1 className="text-2xl font-bold" data-testid="text-signin-title">Welcome Back</h1>
-            <p className="text-muted-foreground mt-1">Sign in to your Abangani NS Group account</p>
+            <p className="text-muted-foreground mt-1">Sign in to your Abangani Stokvel Fund account</p>
           </div>
           <Card className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">

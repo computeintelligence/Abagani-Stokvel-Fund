@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import {
-  members, children, payments,
+  members, children, payments, suppliers,
   type Member, type InsertMember, type Child, type InsertChild,
-  type Payment, type InsertPayment,
+  type Payment, type InsertPayment, type Supplier, type InsertSupplier,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -34,6 +34,12 @@ export interface IStorage {
   }>;
 
   getMembersWithDetails(): Promise<(Member & { children: Child[]; payments: Payment[] })[]>;
+
+  createSupplier(data: InsertSupplier): Promise<Supplier>;
+  getSupplierById(id: string): Promise<Supplier | undefined>;
+  getSupplierByPhone(phone: string): Promise<Supplier | undefined>;
+  updateSupplier(id: string, data: Partial<Supplier>): Promise<Supplier>;
+  getAllSuppliers(): Promise<Supplier[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,6 +154,31 @@ export class DatabaseStorage implements IStorage {
       result.push({ ...member, children: memberChildren, payments: memberPayments });
     }
     return result;
+  }
+
+  async createSupplier(data: InsertSupplier): Promise<Supplier> {
+    const [supplier] = await db.insert(suppliers).values(data).returning();
+    return supplier;
+  }
+
+  async getSupplierById(id: string): Promise<Supplier | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return supplier;
+  }
+
+  async getSupplierByPhone(phone: string): Promise<Supplier | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.phone, phone));
+    return supplier;
+  }
+
+  async updateSupplier(id: string, data: Partial<Supplier>): Promise<Supplier> {
+    const { id: _, createdAt, ...updateData } = data as any;
+    const [updated] = await db.update(suppliers).set(updateData).where(eq(suppliers.id, id)).returning();
+    return updated;
+  }
+
+  async getAllSuppliers(): Promise<Supplier[]> {
+    return db.select().from(suppliers);
   }
 }
 

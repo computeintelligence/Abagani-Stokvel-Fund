@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { Shield, ArrowRight, CheckCircle, GraduationCap, BookOpen, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle, GraduationCap, BookOpen, Sparkles, Shield } from "lucide-react";
+import { StokvelLogo } from "@/components/navbar";
 import { motion } from "framer-motion";
 
 const benefits = [
@@ -65,9 +66,9 @@ export default function Welcome() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <Shield className="h-16 w-16 text-primary mx-auto mb-4" />
+            <StokvelLogo className="h-16 w-16" />
             <h1 className="text-3xl font-bold mb-2" data-testid="text-welcome-title">
-              Welcome to Abangani NS Group!
+              Welcome to Abangani Stokvel Fund!
             </h1>
             <p className="text-xl text-primary font-semibold mb-4">
               Hello, {member.fullName}!
@@ -77,7 +78,7 @@ export default function Welcome() {
           {/* Description */}
           <Card className="p-6 mb-8 bg-card/50">
             <p className="text-muted-foreground mb-4">
-              Abangani NS Group is a trusted stokvel platform where parents come together to save monthly for their children's school uniforms and stationery.
+              Abangani Stokvel Fund is a trusted stokvel platform where parents come together to save monthly for their children's school uniforms and stationery.
             </p>
             <p className="text-sm text-muted-foreground">
               By joining our community, you're taking a proactive step to ensure your children have everything they need for a successful school year.

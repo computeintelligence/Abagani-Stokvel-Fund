@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Shield, Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import { StokvelLogo } from "./navbar";
 
 export function Footer() {
   return (
@@ -8,8 +9,8 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Shield className="h-5 w-5 text-primary" />
-              <span className="font-bold">Abangani NS Group</span>
+              <StokvelLogo className="h-6 w-6" />
+              <span className="font-bold">Abangani Stokvel Fund</span>
             </div>
             <p className="text-sm text-muted-foreground">
               A trusted stokvel platform helping parents save for school uniforms and stationery.
@@ -22,15 +23,15 @@ export function Footer() {
               <Link href="/about" data-testid="link-footer-about">About Us</Link>
               <Link href="/contact" data-testid="link-footer-contact">Contact</Link>
               <Link href="/signup" data-testid="link-footer-signup">Sign Up</Link>
+              <Link href="/supplier/signup" data-testid="link-footer-supplier">Register as Supplier</Link>
             </nav>
           </div>
           <div>
             <h4 className="font-semibold mb-3 text-sm">Plans</h4>
             <nav className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <span>Primary School - R195/mo</span>
-              <span>High School - R295/mo</span>
-              <span>Cashback R500/mo</span>
-              <span>Cashback R1000/mo</span>
+              <span>Primary School - R195/mo per child</span>
+              <span>High School - R295/mo per child</span>
+              <span>Cashback - From R500/mo</span>
             </nav>
           </div>
           <div>
@@ -48,8 +49,9 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="border-t pt-6 text-center text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Abangani NS Group. All rights reserved.</p>
+        <div className="border-t pt-6 text-center text-xs text-muted-foreground space-y-1">
+          <p>&copy; {new Date().getFullYear()} Abangani Stokvel Fund. All rights reserved.</p>
+          <p>Powered by Abangani NS Group</p>
         </div>
       </div>
     </footer>

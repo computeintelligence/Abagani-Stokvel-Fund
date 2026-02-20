@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
-import { signupSchema, registrationSchema, PLANS, MONTHS } from "@shared/schema";
-import type { Member } from "@shared/schema";
+import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema } from "@shared/schema";
+import type { Member, Supplier } from "@shared/schema";
 import crypto from "crypto";
 import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail } from "./email-service";
 
@@ -136,17 +136,37 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid plan selected" });
       }
 
+      let totalAmount: number;
+      let adminFee: number;
+
+      if (planKey === "cashback") {
+        if (data.planAmount < 500) {
+          return res.status(400).json({ message: "Cashback amount must be at least R500" });
+        }
+        totalAmount = data.planAmount;
+        const fees = getCashbackFees(data.planAmount);
+        adminFee = fees.adminFee;
+      } else {
+        const childCount = data.children.length;
+        totalAmount = serverPlan.amount * childCount;
+        adminFee = serverPlan.adminFee * childCount;
+      }
+
       const now = new Date();
       const joinMonth = now.getMonth() + 1;
       const joinYear = now.getFullYear();
 
+      if (data.address) {
+        await storage.updateMember(memberId, { address: data.address });
+      }
+
       const updated = await storage.updateMember(memberId, {
         plan: serverPlan.name,
-        planAmount: serverPlan.amount,
-        adminFee: serverPlan.adminFee,
+        planAmount: totalAmount,
+        adminFee: adminFee,
         joinMonth,
         joinYear,
-        status: "pending",
+        status: "active",
       });
 
       for (const childData of data.children) {
@@ -165,7 +185,7 @@ export async function registerRoutes(
           memberId,
           month,
           year: joinYear,
-          amount: serverPlan.amount,
+          amount: totalAmount,
           status: "unpaid",
           paymentMethod: null,
           reference: null,
@@ -174,7 +194,7 @@ export async function registerRoutes(
 
       res.json(stripPassword(updated));
 
-      sendRegistrationEmail(member.fullName, member.email, member.trackingNumber, serverPlan.name, serverPlan.amount).catch(console.error);
+      sendRegistrationEmail(member.fullName, member.email, member.trackingNumber, serverPlan.name, totalAmount).catch(console.error);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
     }
@@ -539,6 +559,98 @@ export async function registerRoutes(
       }
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Supplier Routes ──────────────────────────────────────────────
+  app.post("/api/supplier/signup", async (req: Request, res: Response) => {
+    try {
+      const data = supplierSignupSchema.parse(req.body);
+      const existing = await storage.getSupplierByPhone(data.phone);
+      if (existing) {
+        return res.status(400).json({ message: "A supplier with this phone number already exists" });
+      }
+      if (!data.agreedToTerms) {
+        return res.status(400).json({ message: "You must agree to the terms" });
+      }
+      const supplier = await storage.createSupplier({
+        ...data,
+        password: hashPassword(data.password),
+      });
+      (req.session as any).supplierId = supplier.id;
+      const { password, ...safe } = supplier;
+      res.status(201).json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/supplier/login", async (req: Request, res: Response) => {
+    try {
+      const data = supplierLoginSchema.parse(req.body);
+      const supplier = await storage.getSupplierByPhone(data.phone);
+      if (!supplier || supplier.password !== hashPassword(data.password)) {
+        return res.status(401).json({ message: "Invalid phone or password" });
+      }
+      (req.session as any).supplierId = supplier.id;
+      const { password, ...safe } = supplier;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/supplier/me", async (req: Request, res: Response) => {
+    const supplierId = (req.session as any)?.supplierId;
+    if (!supplierId) return res.status(401).json({ message: "Not authenticated" });
+    const supplier = await storage.getSupplierById(supplierId);
+    if (!supplier) return res.status(404).json({ message: "Supplier not found" });
+    const { password, ...safe } = supplier;
+    res.json(safe);
+  });
+
+  app.post("/api/supplier/logout", (req: Request, res: Response) => {
+    delete (req.session as any).supplierId;
+    res.json({ message: "Logged out" });
+  });
+
+  app.patch("/api/supplier/profile", async (req: Request, res: Response) => {
+    const supplierId = (req.session as any)?.supplierId;
+    if (!supplierId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const allowed = ["businessName", "businessType", "registrationNumber", "address", "goodsSupplied", "fullName", "surname", "phone", "email"];
+      const updates: any = {};
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) updates[key] = req.body[key];
+      }
+      const updated = await storage.updateSupplier(supplierId, updates);
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/suppliers", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const allSuppliers = await storage.getAllSuppliers();
+      res.json(allSuppliers.map(({ password, ...s }) => s));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/suppliers/:id/status", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const updated = await storage.updateSupplier(req.params.id, { status });
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
     }
   });
 

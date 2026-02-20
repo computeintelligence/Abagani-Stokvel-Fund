@@ -52,7 +52,7 @@ export default function SignUp() {
       const memberData = await res.json();
       justSignedUp.current = true;
       setMemberDirectly(memberData);
-      toast({ title: "Account created!", description: "Welcome to Abangani NS Group." });
+      toast({ title: "Account created!", description: "Welcome to Abangani Stokvel Fund." });
     } catch (err: any) {
       toast({ title: "Signup failed", description: err.message, variant: "destructive" });
     } finally {
@@ -67,7 +67,7 @@ export default function SignUp() {
         <div className="text-center mb-8">
           <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold" data-testid="text-signup-title">Create Your Account</h1>
-          <p className="text-muted-foreground mt-1">Join Abangani NS Group today</p>
+          <p className="text-muted-foreground mt-1">Join Abangani Stokvel Fund today</p>
         </div>
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">

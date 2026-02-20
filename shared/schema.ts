@@ -87,6 +87,7 @@ export const registrationSchema = z.object({
   plan: z.string(),
   planAmount: z.number(),
   adminFee: z.number(),
+  address: z.string().optional(),
   children: z.array(z.object({
     fullName: z.string().min(1),
     school: z.string().min(1),
@@ -106,6 +107,7 @@ export const PLANS = {
     adminFee: 45,
     contribution: 150,
     description: "School uniforms and full stationery for primary school learners",
+    perChild: true,
   },
   highschool: {
     name: "High School",
@@ -113,22 +115,70 @@ export const PLANS = {
     adminFee: 45,
     contribution: 250,
     description: "School uniforms and full stationery for high school learners",
+    perChild: true,
   },
-  cashback500: {
-    name: "Cashback R500",
+  cashback: {
+    name: "Cashback",
     amount: 500,
     adminFee: 60,
     contribution: 440,
     description: "Cashback plan - withdraw funds at the beginning of the year for school supplies",
-  },
-  cashback1000: {
-    name: "Cashback R1000",
-    amount: 1000,
-    adminFee: 105,
-    contribution: 895,
-    description: "Premium cashback plan - withdraw funds at the beginning of the year for school supplies",
+    perChild: false,
   },
 } as const;
+
+export function getCashbackFees(amount: number) {
+  const adminFeeRate = 0.12;
+  const adminFee = Math.round(amount * adminFeeRate);
+  return { adminFee, contribution: amount - adminFee };
+}
+
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name").notNull(),
+  surname: text("surname").notNull().default(""),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  password: text("password").notNull(),
+  businessName: text("business_name").notNull(),
+  businessType: text("business_type").notNull(),
+  registrationNumber: text("registration_number"),
+  address: text("address").notNull(),
+  goodsSupplied: text("goods_supplied").array().notNull(),
+  agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+
+export const supplierSignupSchema = z.object({
+  fullName: z.string().min(1),
+  surname: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(10),
+  password: z.string().min(6),
+  businessName: z.string().min(1),
+  businessType: z.string().min(1),
+  registrationNumber: z.string().optional(),
+  address: z.string().min(1),
+  goodsSupplied: z.array(z.string()).min(1),
+  agreedToTerms: z.boolean(),
+});
+
+export type SupplierSignupData = z.infer<typeof supplierSignupSchema>;
+
+export const supplierLoginSchema = z.object({
+  phone: z.string().min(1),
+  password: z.string().min(1),
+});
 
 export const MONTHS = [
   "January", "February", "March", "April", "May", "June",

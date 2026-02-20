@@ -5,19 +5,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MONTHS, PLANS } from "@shared/schema";
 import type { Member, Payment, Child } from "@shared/schema";
 import {
   Shield, Users, CheckCircle, CreditCard, Clock, Moon, Sun,
-  LogOut, Download, Trash2, Search, Edit2, Save, X, Mail, FileText
+  LogOut, Download, Trash2, Search, Mail, FileText, Eye
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-provider";
 import { Footer } from "@/components/footer";
+import { StokvelLogo } from "@/components/navbar";
 
 const ADMIN_CODE = "ABANGANI26";
 
@@ -62,7 +60,7 @@ export default function Admin() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <Card className="p-6 w-full max-w-sm">
           <div className="text-center mb-6">
-            <Shield className="h-10 w-10 text-primary mx-auto mb-3" />
+            <StokvelLogo className="h-10 w-10 mx-auto mb-3" />
             <h1 className="text-xl font-bold" data-testid="text-admin-title">Admin Access</h1>
             <p className="text-sm text-muted-foreground">Enter the admin access code</p>
           </div>
@@ -108,116 +106,10 @@ export default function Admin() {
   );
 }
 
-function EditMemberDialog({ member, onClose }: { member: Member & { children: Child[]; payments: Payment[] }; onClose: () => void }) {
-  const { toast } = useToast();
-  const [fullName, setFullName] = useState(member.fullName);
-  const [surname, setSurname] = useState(member.surname);
-  const [email, setEmail] = useState(member.email);
-  const [phone, setPhone] = useState(member.phone);
-  const [address, setAddress] = useState(member.address || "");
-  const [status, setStatus] = useState(member.status);
-
-  const editMutation = useMutation({
-    mutationFn: async (data: { fullName: string; surname: string; email: string; phone: string; address: string; status: string }) => {
-      await adminFetch(`/api/admin/members/${member.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-    },
-    onSuccess: () => {
-      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
-      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({ title: "Member updated successfully" });
-      onClose();
-    },
-    onError: (err: Error) => {
-      toast({ title: "Failed to update member", description: err.message, variant: "destructive" });
-    },
-  });
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="edit-fullName">Full Name</Label>
-        <Input
-          id="edit-fullName"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          data-testid={`input-edit-fullName-${member.id}`}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="edit-surname">Surname</Label>
-        <Input
-          id="edit-surname"
-          value={surname}
-          onChange={(e) => setSurname(e.target.value)}
-          data-testid={`input-edit-surname-${member.id}`}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="edit-email">Email</Label>
-        <Input
-          id="edit-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          data-testid={`input-edit-email-${member.id}`}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="edit-phone">Phone</Label>
-        <Input
-          id="edit-phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          data-testid={`input-edit-phone-${member.id}`}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="edit-address">Address</Label>
-        <Input
-          id="edit-address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          data-testid={`input-edit-address-${member.id}`}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="edit-status">Status</Label>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger data-testid={`select-edit-status-${member.id}`}>
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" onClick={onClose} data-testid={`button-cancel-edit-${member.id}`}>
-          <X className="h-4 w-4 mr-1" />
-          Cancel
-        </Button>
-        <Button
-          onClick={() => editMutation.mutate({ fullName, surname, email, phone, address, status })}
-          disabled={editMutation.isPending}
-          data-testid={`button-save-edit-${member.id}`}
-        >
-          <Save className="h-4 w-4 mr-1" />
-          {editMutation.isPending ? "Saving..." : "Save"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void; theme: string; onLogout: () => void }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [editingMember, setEditingMember] = useState<(Member & { children: Child[]; payments: Payment[] }) | null>(null);
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
   const { data: stats } = useQuery<{
     totalMembers: number;
@@ -254,17 +146,6 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
       adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
       adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "Payment rejected" });
-    },
-  });
-
-  const deleteMemberMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await adminFetch(`/api/admin/members/${id}`, { method: "DELETE" });
-    },
-    onSuccess: () => {
-      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
-      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({ title: "Member deleted" });
     },
   });
 
@@ -337,7 +218,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
+            <StokvelLogo className="h-6 w-6" />
             <span className="font-bold" data-testid="text-admin-brand">Admin Panel</span>
           </div>
           <div className="flex items-center gap-1">
@@ -423,12 +304,8 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                 <MemberCard
                   key={m.id}
                   member={m}
-                  onEdit={() => setEditingMember(m)}
-                  onDelete={() => {
-                    if (window.confirm(`Are you sure you want to delete ${m.fullName}?`)) {
-                      deleteMemberMutation.mutate(m.id);
-                    }
-                  }}
+                  expanded={expandedMember === m.id}
+                  onToggleExpand={() => setExpandedMember(expandedMember === m.id ? null : m.id)}
                 />
               ))
             )}
@@ -442,7 +319,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                 <Card key={p.id} className="p-4" data-testid={`card-payment-${p.id}`}>
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                      <p className="font-semibold" data-testid={`text-payment-member-${p.id}`}>{m.fullName}</p>
+                      <p className="font-semibold" data-testid={`text-payment-member-${p.id}`}>{m.fullName} {m.surname}</p>
                       <p className="text-sm text-muted-foreground">
                         R{p.amount} - {MONTHS[p.month - 1]} {p.year}
                       </p>
@@ -489,7 +366,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                   <Card key={m.id} className="p-4" data-testid={`card-arrears-${m.id}`}>
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <div>
-                        <p className="font-semibold" data-testid={`text-arrears-name-${m.id}`}>{m.fullName}</p>
+                        <p className="font-semibold" data-testid={`text-arrears-name-${m.id}`}>{m.fullName} {m.surname}</p>
                         <p className="text-sm text-muted-foreground">{m.phone}</p>
                         {m.email && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -521,34 +398,25 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         </Tabs>
       </main>
 
-      <Dialog open={!!editingMember} onOpenChange={(open) => { if (!open) setEditingMember(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Member</DialogTitle>
-          </DialogHeader>
-          {editingMember && (
-            <EditMemberDialog member={editingMember} onClose={() => setEditingMember(null)} />
-          )}
-        </DialogContent>
-      </Dialog>
-
       <Footer />
     </div>
   );
 }
 
-function MemberCard({ member, onEdit, onDelete }: {
+function MemberCard({ member, expanded, onToggleExpand }: {
   member: Member & { children: Child[]; payments: Payment[] };
-  onEdit: () => void;
-  onDelete: () => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
 }) {
-  const plan = Object.values(PLANS).find((p) => p.amount === member.planAmount);
+  const plan = Object.values(PLANS).find((p) => p.name === member.plan);
+  const paidCount = member.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
+  const unpaidCount = member.payments.filter((p) => p.status === "unpaid").length;
 
   return (
     <Card className="p-4" data-testid={`card-member-${member.id}`}>
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
-          <p className="font-semibold" data-testid={`text-member-name-${member.id}`}>{member.fullName}</p>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold" data-testid={`text-member-name-${member.id}`}>{member.fullName} {member.surname}</p>
           <p className="text-sm text-muted-foreground" data-testid={`text-member-phone-${member.id}`}>{member.phone}</p>
           {member.email && (
             <p className="text-sm text-muted-foreground flex items-center gap-1" data-testid={`text-member-email-${member.id}`}>
@@ -556,7 +424,7 @@ function MemberCard({ member, onEdit, onDelete }: {
             </p>
           )}
           <div className="flex flex-wrap gap-1 mt-1">
-            <Badge variant="secondary">{plan?.name || member.plan}</Badge>
+            <Badge variant="secondary">{member.plan || "No plan"}</Badge>
             <Badge variant="outline">{member.trackingNumber}</Badge>
             <Badge variant={member.status === "active" ? "default" : member.status === "suspended" ? "destructive" : "secondary"}>
               {member.status}
@@ -564,19 +432,55 @@ function MemberCard({ member, onEdit, onDelete }: {
           </div>
           {member.children.length > 0 && (
             <p className="text-xs text-muted-foreground mt-1">
-              {member.children.map((c) => `${c.fullName} (${c.grade})`).join(", ")}
+              Children: {member.children.map((c) => `${c.fullName} (${c.grade})`).join(", ")}
             </p>
           )}
         </div>
-        <div className="flex gap-1">
-          <Button size="icon" variant="ghost" onClick={onEdit} data-testid={`button-edit-member-${member.id}`}>
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={onDelete} data-testid={`button-delete-member-${member.id}`}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
-        </div>
+        <Button size="icon" variant="ghost" onClick={onToggleExpand} data-testid={`button-view-member-${member.id}`}>
+          <Eye className="h-4 w-4" />
+        </Button>
       </div>
+
+      {expanded && (
+        <div className="mt-4 pt-4 border-t space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+            <div>
+              <p className="text-muted-foreground">Address</p>
+              <p className="font-medium">{member.address || "Not provided"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Plan Amount</p>
+              <p className="font-medium">{member.planAmount ? `R${member.planAmount}/mo` : "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Admin Fee</p>
+              <p className="font-medium">{member.adminFee ? `R${member.adminFee}` : "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Joined</p>
+              <p className="font-medium">{member.joinMonth && member.joinYear ? `${MONTHS[member.joinMonth - 1]} ${member.joinYear}` : "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Payments</p>
+              <p className="font-medium">{paidCount} paid, {unpaidCount} unpaid</p>
+            </div>
+          </div>
+
+          {member.children.length > 0 && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Children Details</p>
+              <div className="space-y-2">
+                {member.children.map((c) => (
+                  <div key={c.id} className="text-sm bg-accent/10 rounded p-2">
+                    <p className="font-medium">{c.fullName}</p>
+                    <p className="text-muted-foreground">{c.school} - {c.grade}{c.uniformSize ? `, Size: ${c.uniformSize}` : ""}{c.shoeSize ? `, Shoe: ${c.shoeSize}` : ""}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
