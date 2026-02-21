@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
 import { Redirect, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { useAffiliateAuth } from "@/lib/affiliate-auth";
 import { StokvelLogo } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -28,18 +28,11 @@ export default function AffiliateDashboard() {
   const { affiliate, isLoading, logout } = useAffiliateAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [stats, setStats] = useState<AffiliateStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
 
-  useEffect(() => {
-    if (affiliate) {
-      fetch("/api/affiliate/stats", { credentials: "include" })
-        .then(res => res.json())
-        .then(data => setStats(data))
-        .catch(console.error)
-        .finally(() => setStatsLoading(false));
-    }
-  }, [affiliate]);
+  const { data: stats, isLoading: statsLoading } = useQuery<AffiliateStats>({
+    queryKey: ["/api/affiliate/stats"],
+    enabled: !!affiliate,
+  });
 
   if (isLoading) {
     return (

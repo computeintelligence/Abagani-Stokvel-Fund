@@ -1,7 +1,7 @@
 # Abangani Stokvel Fund - Stokvel Subscription Platform
 
 ## Overview
-A SaaS stokvel subscription platform where parents pay monthly contributions towards school uniforms and stationery for their children. Includes a supplier portal for businesses to register and supply goods. Built with React + Express + PostgreSQL.
+A SaaS stokvel subscription platform where parents pay monthly contributions towards school uniforms and stationery for their children. Includes a supplier portal for businesses to register and supply goods, and an affiliate program for referral commissions. Built with React + Express + PostgreSQL.
 
 ## Architecture
 - **Frontend**: React + Vite + TailwindCSS + Shadcn UI + Framer Motion (port 5000)
@@ -21,10 +21,13 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - `/register` - Plan selection wizard (authenticated, no-plan users only) - 5 steps: Plan → Children → Address → Summary → Agreement
 - `/dashboard` - User dashboard with payment progress, monthly payments, children management, export
 - `/profile` - View and edit member profile (name, surname, phone, address)
-- `/admin` - Admin panel (access code: ABANGANI26) with view-only member details, payment approvals, arrears reminders
+- `/admin` - Admin panel (access code: ABANGANI26) with member/supplier/affiliate management, payment approvals, arrears reminders
 - `/supplier/signup` - Supplier registration wizard (4 steps: Personal → Business → Products → Agreement)
 - `/supplier/login` - Supplier login page
 - `/supplier/dashboard` - Supplier dashboard with profile view/edit, status tracking
+- `/affiliate/signup` - Affiliate registration wizard (3 steps: Personal → Banking → Agreement)
+- `/affiliate/login` - Affiliate login page
+- `/affiliate/dashboard` - Affiliate dashboard with link, stats (clicks, conversions, earnings), progress bar
 
 ## Two-Phase Registration Flow
 1. **Signup** (`/signup`): User creates account with Name, Surname, Email, Phone, Password → auto-login → redirect to Welcome page
@@ -37,10 +40,13 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Cashback: From R500/month (12% admin fee, flexible amount via getCashbackFees())
 
 ## Database Tables
-- `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration)
+- `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration), referredByAffiliate
 - `children` - Children linked to members with school/grade info
 - `payments` - Monthly payment records (12 per member per year)
 - `suppliers` - Supplier business accounts with goods supplied, status (pending/approved/rejected)
+- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats
+- `affiliate_clicks` - Records of clicks on affiliate links
+- `affiliate_conversions` - Conversion records when referred members make first payment
 
 ## Supplier System
 - Separate auth context (SupplierAuthProvider) with session-based auth (supplierId in session)
@@ -49,11 +55,24 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Admin can view all suppliers and approve/reject via admin API routes
 - Products selection from predefined list + custom products
 
+## Affiliate System
+- Separate auth context (AffiliateAuthProvider) with session-based auth (affiliateId in session)
+- 3-step registration wizard: Personal Details → Banking Details (optional) → Agreement
+- Affiliate dashboard with unique link, click/conversion stats, earnings progress bar
+- Commission: R50 per conversion, max 100 conversions (R5,000 max earnings)
+- Conversion flow: Click affiliate link → signup with ?ref=CODE → register → first payment verified → commission credited
+- Tracking numbers: AFF-YYYY-XXXXXX format
+- Admin can view all affiliates and approve/reject/delete via admin panel
+
 ## Email Automation (server/email-service.ts)
 - **Welcome email**: Sent on signup with AI-generated content via Together AI
 - **Registration confirmation**: Sent on plan selection with tracking number
 - **Payment verified**: Sent when admin verifies a payment
 - **Payment reminder**: Sent by admin for members with unpaid months
+- **Supplier registration**: Sent on supplier signup with tracking number
+- **Affiliate registration**: Sent on affiliate signup with tracking number
+- **Supplier/Affiliate approval**: Sent when admin approves supplier or affiliate
+- **Contact form**: Routes messages to abanganinsgroup@gmail.com
 - All emails use professional HTML templates with Abangani branding
 
 ## Shared Components
@@ -62,14 +81,14 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 
 ## Security
 - Session-based auth with SESSION_SECRET from env (secure cookies in production)
-- Separate member and supplier session auth (memberId / supplierId)
+- Separate member, supplier, and affiliate session auth (memberId / supplierId / affiliateId)
 - requireAuth middleware on all member routes
 - requireOwnMember middleware on routes with `:id` param (verifies session member matches)
 - Child update/delete routes verify child belongs to session member (IDOR protection)
 - Admin routes require `x-admin-code: ABANGANI26` header
 - Server-side plan validation prevents price tampering during registration
 - Signup auto-logs in user and redirects to welcome page
-- Admin panel is view-only (no member editing from admin)
+- Admin can delete members, suppliers, and affiliates
 
 ## API Routes
 ### Member Auth
@@ -97,6 +116,10 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - GET `/api/admin/export` - Export members data (CSV/PDF)
 - GET `/api/admin/suppliers` - All suppliers
 - PATCH `/api/admin/suppliers/:id/status` - Approve/reject supplier
+- DELETE `/api/admin/suppliers/:id` - Delete supplier
+- GET `/api/admin/affiliates` - All affiliates
+- PATCH `/api/admin/affiliates/:id/status` - Approve/reject affiliate
+- DELETE `/api/admin/affiliates/:id` - Delete affiliate
 
 ### Supplier
 - POST `/api/supplier/signup` - Create supplier account
@@ -104,3 +127,14 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - GET `/api/supplier/me` - Current supplier
 - POST `/api/supplier/logout` - Supplier logout
 - PATCH `/api/supplier/profile` - Update supplier profile
+
+### Affiliate
+- POST `/api/affiliate/signup` - Create affiliate account
+- POST `/api/affiliate/login` - Affiliate login
+- GET `/api/affiliate/me` - Current affiliate
+- POST `/api/affiliate/logout` - Affiliate logout
+- GET `/api/affiliate/stats` - Dashboard statistics (clicks, conversions, earnings, link)
+- GET `/api/affiliate/track/:code` - Record affiliate link click
+
+### Contact
+- POST `/api/contact` - Send contact form message to abanganinsgroup@gmail.com
