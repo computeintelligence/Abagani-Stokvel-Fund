@@ -37,7 +37,10 @@ export default function SupplierDashboard() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
-  const [address, setAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressProvince, setAddressProvince] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
   const [goodsSupplied, setGoodsSupplied] = useState<string[]>([]);
   const [fullName, setFullName] = useState("");
   const [surname, setSurname] = useState("");
@@ -61,7 +64,11 @@ export default function SupplierDashboard() {
     setBusinessName(supplier.businessName);
     setBusinessType(supplier.businessType);
     setRegistrationNumber(supplier.registrationNumber || "");
-    setAddress(supplier.address);
+    const addrParts = (supplier.address || "").split(", ");
+    setStreetAddress(addrParts[0] || "");
+    setAddressCity(addrParts[1] || "");
+    setAddressProvince(addrParts[2] || "");
+    setAddressPostalCode(addrParts[3] || "");
     setGoodsSupplied([...supplier.goodsSupplied]);
     setFullName(supplier.fullName);
     setSurname(supplier.surname);
@@ -92,7 +99,7 @@ export default function SupplierDashboard() {
         businessName,
         businessType,
         registrationNumber: registrationNumber || undefined,
-        address,
+        address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
         goodsSupplied,
         fullName,
         surname,
@@ -127,7 +134,7 @@ export default function SupplierDashboard() {
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
             <StokvelLogo className="h-6 w-6" />
-            <span className="font-bold">Supplier Dashboard</span>
+            <span className="font-bold">Abangani Stokvel Fund</span>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={statusColor} data-testid="badge-supplier-status">
@@ -245,8 +252,22 @@ export default function SupplierDashboard() {
                 <Input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} data-testid="input-edit-reg-number" />
               </div>
               <div>
-                <Label>Address</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} data-testid="input-edit-address" />
+                <Label>Street Address</Label>
+                <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g. 45 Industrial Road" data-testid="input-edit-street" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>City / Town</Label>
+                  <Input value={addressCity} onChange={(e) => setAddressCity(e.target.value)} placeholder="e.g. Johannesburg" data-testid="input-edit-city" />
+                </div>
+                <div>
+                  <Label>Province</Label>
+                  <Input value={addressProvince} onChange={(e) => setAddressProvince(e.target.value)} placeholder="e.g. Gauteng" data-testid="input-edit-province" />
+                </div>
+              </div>
+              <div className="w-1/2">
+                <Label>Postal Code</Label>
+                <Input value={addressPostalCode} onChange={(e) => setAddressPostalCode(e.target.value)} placeholder="e.g. 2000" data-testid="input-edit-postal-code" />
               </div>
             </div>
           ) : (

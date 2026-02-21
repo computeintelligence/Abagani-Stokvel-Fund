@@ -13,11 +13,11 @@ import { useAffiliateAuth } from "@/lib/affiliate-auth";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import {
-  ArrowLeft, ArrowRight, User, Banknote, CheckCircle, FileText,
+  ArrowLeft, ArrowRight, User, CheckCircle, FileText,
   Link2, TrendingUp
 } from "lucide-react";
 
-const STEPS = ["Personal", "Banking", "Agreement"];
+const STEPS = ["Personal", "Agreement"];
 
 export default function AffiliateSignup() {
   const [, navigate] = useLocation();
@@ -33,10 +33,10 @@ export default function AffiliateSignup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [idNumber, setIdNumber] = useState("");
-  const [address, setAddress] = useState("");
-
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressProvince, setAddressProvince] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
 
   const [agreed, setAgreed] = useState(false);
 
@@ -47,8 +47,6 @@ export default function AffiliateSignup() {
       case 0:
         return fullName.trim() && surname.trim() && email.includes("@") && phone.length >= 10 && password.length >= 6 && password === confirmPassword;
       case 1:
-        return true;
-      case 2:
         return agreed;
       default:
         return false;
@@ -65,9 +63,7 @@ export default function AffiliateSignup() {
         phone,
         password,
         idNumber: idNumber || undefined,
-        address: address || undefined,
-        bankName: bankName || undefined,
-        accountNumber: accountNumber || undefined,
+        address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", ") || undefined,
         agreedToTerms: agreed,
       });
       const data = await res.json();
@@ -148,8 +144,22 @@ export default function AffiliateSignup() {
                 <Input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} placeholder="SA ID number" data-testid="input-affiliate-id" />
               </div>
               <div>
-                <Label>Address (optional)</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Your address" data-testid="input-affiliate-address" />
+                <Label>Street Address (optional)</Label>
+                <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g. 123 Main Street" data-testid="input-affiliate-street" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>City / Town</Label>
+                  <Input value={addressCity} onChange={(e) => setAddressCity(e.target.value)} placeholder="e.g. Johannesburg" data-testid="input-affiliate-city" />
+                </div>
+                <div>
+                  <Label>Province</Label>
+                  <Input value={addressProvince} onChange={(e) => setAddressProvince(e.target.value)} placeholder="e.g. Gauteng" data-testid="input-affiliate-province" />
+                </div>
+              </div>
+              <div className="w-1/2">
+                <Label>Postal Code</Label>
+                <Input value={addressPostalCode} onChange={(e) => setAddressPostalCode(e.target.value)} placeholder="e.g. 2000" data-testid="input-affiliate-postal-code" />
               </div>
               <div>
                 <Label>Password</Label>
@@ -169,28 +179,6 @@ export default function AffiliateSignup() {
         {step === 1 && (
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-6">
-              <Banknote className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold">Banking Details (Optional)</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Provide your banking details for commission payouts. You can add these later from your dashboard.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <Label>Bank Name</Label>
-                <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. FNB, Standard Bank, Capitec" data-testid="input-affiliate-bank" />
-              </div>
-              <div>
-                <Label>Account Number</Label>
-                <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Your bank account number" data-testid="input-affiliate-account" />
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {step === 2 && (
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-6">
               <FileText className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-bold">Affiliate Agreement</h2>
             </div>
@@ -200,7 +188,6 @@ export default function AffiliateSignup() {
               <div className="text-sm space-y-1">
                 <p><strong>Name:</strong> {fullName} {surname}</p>
                 <p><strong>Contact:</strong> {phone} | {email}</p>
-                {bankName && <p><strong>Bank:</strong> {bankName} | Acc: {accountNumber}</p>}
               </div>
             </Card>
 
@@ -210,7 +197,7 @@ export default function AffiliateSignup() {
               <p>I acknowledge that commissions are capped at <strong>100 conversions</strong> (R5,000 maximum earnings).</p>
               <p>I agree to promote Abangani Stokvel Fund honestly and ethically, without making misleading claims about the service.</p>
               <p>My registration is subject to approval by Abangani Stokvel Fund administrators.</p>
-              <p>I understand that commissions will be paid out to my provided banking details after verification.</p>
+              <p>I understand that commissions will be paid out after verification.</p>
             </div>
 
             <div className="flex items-start gap-3 border-t pt-4">

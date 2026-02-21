@@ -61,7 +61,7 @@ export default function Dashboard() {
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
             <Link href="/" className="flex items-center gap-2">
               <Shield className="h-6 w-6 text-primary" />
-              <span className="font-bold" data-testid="text-dashboard-brand">Abangani NS Group</span>
+              <span className="font-bold" data-testid="text-dashboard-brand">Abangani Stokvel Fund</span>
             </Link>
             <div className="flex items-center gap-2">
               <Button variant="ghost" asChild data-testid="link-profile">
@@ -122,7 +122,7 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" />
-            <span className="font-bold" data-testid="text-dashboard-brand">Abangani NS Group</span>
+            <span className="font-bold" data-testid="text-dashboard-brand">Abangani Stokvel Fund</span>
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild data-testid="link-profile">

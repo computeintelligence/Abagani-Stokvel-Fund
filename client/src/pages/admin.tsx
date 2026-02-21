@@ -281,7 +281,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
             <StokvelLogo className="h-6 w-6" />
-            <span className="font-bold" data-testid="text-admin-brand">Admin Panel</span>
+            <span className="font-bold" data-testid="text-admin-brand">Abangani Stokvel Fund - Admin</span>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" onClick={handlePdfExport} data-testid="button-admin-pdf-export">

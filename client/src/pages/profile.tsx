@@ -21,7 +21,10 @@ export default function Profile() {
   const [fullName, setFullName] = useState("");
   const [surname, setSurname] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressProvince, setAddressProvince] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
   const [saving, setSaving] = useState(false);
 
   if (authLoading) {
@@ -43,7 +46,11 @@ export default function Profile() {
     setFullName(member.fullName);
     setSurname(member.surname || "");
     setPhone(member.phone);
-    setAddress(member.address || "");
+    const addrParts = (member.address || "").split(", ");
+    setStreetAddress(addrParts[0] || "");
+    setAddressCity(addrParts[1] || "");
+    setAddressProvince(addrParts[2] || "");
+    setAddressPostalCode(addrParts[3] || "");
     setEditing(true);
   };
 
@@ -54,7 +61,7 @@ export default function Profile() {
         fullName,
         surname,
         phone,
-        address,
+        address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
       });
       await refresh();
       setEditing(false);
@@ -147,12 +154,41 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label>Street Address</Label>
                 <Input
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  data-testid="input-profile-address"
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  placeholder="e.g. 123 Main Street"
+                  data-testid="input-profile-street"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>City / Town</Label>
+                  <Input
+                    value={addressCity}
+                    onChange={(e) => setAddressCity(e.target.value)}
+                    placeholder="e.g. Johannesburg"
+                    data-testid="input-profile-city"
+                  />
+                </div>
+                <div>
+                  <Label>Province</Label>
+                  <Input
+                    value={addressProvince}
+                    onChange={(e) => setAddressProvince(e.target.value)}
+                    placeholder="e.g. Gauteng"
+                    data-testid="input-profile-province"
+                  />
+                </div>
+              </div>
+              <div className="w-1/2">
+                <Label>Postal Code</Label>
+                <Input
+                  value={addressPostalCode}
+                  onChange={(e) => setAddressPostalCode(e.target.value)}
+                  placeholder="e.g. 2000"
+                  data-testid="input-profile-postal-code"
                 />
               </div>
               <div className="flex gap-2">

@@ -60,7 +60,10 @@ export default function SupplierSignup() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
-  const [address, setAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressProvince, setAddressProvince] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
 
   const [goodsSupplied, setGoodsSupplied] = useState<string[]>([]);
   const [customGood, setCustomGood] = useState("");
@@ -87,7 +90,7 @@ export default function SupplierSignup() {
       case 0:
         return fullName.trim() && surname.trim() && email.includes("@") && phone.length >= 10 && password.length >= 6 && password === confirmPassword;
       case 1:
-        return businessName.trim() && businessType && address.trim();
+        return businessName.trim() && businessType && streetAddress.trim();
       case 2:
         return goodsSupplied.length > 0;
       case 3:
@@ -109,7 +112,7 @@ export default function SupplierSignup() {
         businessName,
         businessType,
         registrationNumber: registrationNumber || undefined,
-        address,
+        address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
         goodsSupplied,
         agreedToTerms: agreed,
       });
@@ -220,8 +223,22 @@ export default function SupplierSignup() {
                 <Input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="e.g. 2024/123456/07" data-testid="input-supplier-reg-number" />
               </div>
               <div>
-                <Label>Business Address</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full business address" data-testid="input-supplier-address" />
+                <Label>Street Address</Label>
+                <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g. 45 Industrial Road, Unit B" data-testid="input-supplier-street" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>City / Town</Label>
+                  <Input value={addressCity} onChange={(e) => setAddressCity(e.target.value)} placeholder="e.g. Johannesburg" data-testid="input-supplier-city" />
+                </div>
+                <div>
+                  <Label>Province</Label>
+                  <Input value={addressProvince} onChange={(e) => setAddressProvince(e.target.value)} placeholder="e.g. Gauteng" data-testid="input-supplier-province" />
+                </div>
+              </div>
+              <div className="w-1/2">
+                <Label>Postal Code</Label>
+                <Input value={addressPostalCode} onChange={(e) => setAddressPostalCode(e.target.value)} placeholder="e.g. 2000" data-testid="input-supplier-postal-code" />
               </div>
             </div>
           </Card>
@@ -293,7 +310,7 @@ export default function SupplierSignup() {
                 <p><strong>Contact:</strong> {fullName} {surname} | {phone} | {email}</p>
                 <p><strong>Business:</strong> {businessName} ({businessType})</p>
                 {registrationNumber && <p><strong>Reg No:</strong> {registrationNumber}</p>}
-                <p><strong>Address:</strong> {address}</p>
+                <p><strong>Address:</strong> {[streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", ")}</p>
                 <p><strong>Products:</strong> {goodsSupplied.join(", ")}</p>
               </div>
             </Card>

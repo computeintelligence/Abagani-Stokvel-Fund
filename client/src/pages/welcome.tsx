@@ -5,27 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { ArrowRight, CheckCircle, GraduationCap, BookOpen, Sparkles, Shield } from "lucide-react";
+import { ArrowRight, CheckCircle, GraduationCap, BookOpen, Sparkles, Shield, Package, Link2 } from "lucide-react";
 import { StokvelLogo } from "@/components/navbar";
 import { motion } from "framer-motion";
-
-const benefits = [
-  {
-    icon: GraduationCap,
-    title: "Brand New Uniforms",
-    description: "Quality school uniforms for your children"
-  },
-  {
-    icon: BookOpen,
-    title: "Complete Stationery",
-    description: "All necessary school supplies included"
-  },
-  {
-    icon: Sparkles,
-    title: "Community Savings",
-    description: "Save together with other parents in our network"
-  }
-];
 
 export default function Welcome() {
   const { member, isLoading } = useAuth();
@@ -75,43 +57,18 @@ export default function Welcome() {
             </p>
           </div>
 
-          {/* Description */}
-          <Card className="p-6 mb-8 bg-card/50">
-            <p className="text-muted-foreground mb-4">
-              Abangani Stokvel Fund is a trusted stokvel platform where parents come together to save monthly for their children's school uniforms and stationery.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              By joining our community, you're taking a proactive step to ensure your children have everything they need for a successful school year.
-            </p>
+          {/* Account Creation Message */}
+          <Card className="p-4 mb-8 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                Your account has been created successfully. Choose how you'd like to get started with Abangani Stokvel Fund.
+              </p>
+            </div>
           </Card>
 
-          {/* Benefits */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Why Choose Abangani?</h2>
-            <div className="space-y-3">
-              {benefits.map((benefit, index) => {
-                const BenefitIcon = benefit.icon;
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-accent/10"
-                  >
-                    <BenefitIcon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">{benefit.title}</p>
-                      <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Tracking Number Card */}
-          <Card className="p-6 mb-8 bg-primary/5 border-primary/20">
+          <Card className="p-4 mb-8 bg-primary/5 border-primary/20">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-muted-foreground">Your Tracking Number</p>
               <CheckCircle className="h-5 w-5 text-green-500" />
@@ -128,35 +85,91 @@ export default function Welcome() {
             </p>
           </Card>
 
-          {/* Account Creation Message */}
-          <Card className="p-4 mb-8 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50">
-            <p className="text-sm font-medium text-green-900 dark:text-green-100">
-              Your account has been created successfully. The next step is to choose a subscription plan that works best for your family.
-            </p>
-          </Card>
+          {/* Three Registration Options */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">How would you like to join?</h2>
+            <div className="space-y-3">
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Link href="/register">
+                  <Card className="p-5 cursor-pointer transition-all hover:ring-2 hover:ring-primary hover:shadow-md hover-elevate" data-testid="card-option-member">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg">Member</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Save monthly for your children's school uniforms and stationery
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </Card>
+                </Link>
+              </motion.div>
 
-          {/* CTA Buttons */}
-          <div className="space-y-3">
-            <Button 
-              className="w-full h-11" 
-              asChild
-              data-testid="button-continue-register"
-            >
-              <Link href="/register" className="flex items-center justify-center gap-2">
-                Continue to Registration
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="w-full"
-              asChild
-            >
-              <Link href="/dashboard" data-testid="link-go-dashboard">
-                Go to Dashboard
-              </Link>
-            </Button>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <Link href="/supplier/signup">
+                  <Card className="p-5 cursor-pointer transition-all hover:ring-2 hover:ring-primary hover:shadow-md hover-elevate" data-testid="card-option-supplier">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Package className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg">Supplier</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Register your business to supply school uniforms and stationery
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </Card>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <Link href="/affiliate/signup">
+                  <Card className="p-5 cursor-pointer transition-all hover:ring-2 hover:ring-primary hover:shadow-md hover-elevate" data-testid="card-option-affiliate">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Link2 className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg">Affiliate</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Earn R50 commission for every person you refer who joins
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </Card>
+                </Link>
+              </motion.div>
+            </div>
           </div>
+
+          {/* Dashboard Link */}
+          <Button 
+            variant="ghost" 
+            className="w-full"
+            asChild
+          >
+            <Link href="/dashboard" data-testid="link-go-dashboard">
+              Go to Dashboard
+            </Link>
+          </Button>
         </motion.div>
       </main>
 

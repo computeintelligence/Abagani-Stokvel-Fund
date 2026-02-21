@@ -42,7 +42,10 @@ export default function Register() {
   const [children, setChildren] = useState<ChildData[]>([
     { fullName: "", school: "", grade: "", uniformSize: "", shoeSize: "" },
   ]);
-  const [address, setAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [agreed, setAgreed] = useState(false);
 
   const currentMonth = new Date().getMonth();
@@ -132,7 +135,7 @@ export default function Register() {
         plan: selectedPlan,
         planAmount: isCashback ? cashbackAmount : plan.amount * children.length,
         adminFee: getAdminFee(),
-        address: address || undefined,
+        address: [streetAddress, city, province, postalCode].filter(Boolean).join(", ") || undefined,
         children: children.map((c) => ({
           fullName: c.fullName,
           school: c.school,
@@ -374,16 +377,46 @@ export default function Register() {
           <div>
             <h2 className="text-2xl font-bold mb-6" data-testid="text-step-title">Your Address</h2>
             <Card className="p-6">
-              <div>
-                <Label>Physical Address (optional)</Label>
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter your full address"
-                  className="mt-2"
-                  data-testid="input-address"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
+              <div className="space-y-4">
+                <div>
+                  <Label>Street Address (optional)</Label>
+                  <Input
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    placeholder="e.g. 123 Main Street, Unit 4"
+                    data-testid="input-street-address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>City / Town</Label>
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="e.g. Johannesburg"
+                      data-testid="input-city"
+                    />
+                  </div>
+                  <div>
+                    <Label>Province</Label>
+                    <Input
+                      value={province}
+                      onChange={(e) => setProvince(e.target.value)}
+                      placeholder="e.g. Gauteng"
+                      data-testid="input-province"
+                    />
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <Label>Postal Code</Label>
+                  <Input
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    placeholder="e.g. 2000"
+                    data-testid="input-postal-code"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
                   Your address helps us with delivery of school uniforms and stationery.
                 </p>
               </div>
@@ -406,10 +439,10 @@ export default function Register() {
                 <p className="text-sm text-muted-foreground">Member</p>
                 <p className="font-semibold">{member.fullName} {member.surname} | {member.phone}</p>
               </div>
-              {address && (
+              {(streetAddress || city || province || postalCode) && (
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="font-semibold">{address}</p>
+                  <p className="font-semibold">{[streetAddress, city, province, postalCode].filter(Boolean).join(", ")}</p>
                 </div>
               )}
               <div>

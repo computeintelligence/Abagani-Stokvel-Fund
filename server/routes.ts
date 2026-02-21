@@ -703,7 +703,7 @@ export async function registerRoutes(
       });
       (req.session as any).affiliateId = affiliate.id;
       const { password, ...safe } = affiliate;
-      const affiliateLink = `${BASE_URL}/?ref=${affiliateCode}`;
+      const affiliateLink = `${BASE_URL}/signup?ref=${affiliateCode}`;
       sendAffiliateRegistrationEmail(data.fullName, data.email, trackingNumber, affiliateCode, affiliateLink).catch(console.error);
       res.status(201).json({ ...safe, affiliateLink });
     } catch (err: any) {
@@ -748,7 +748,7 @@ export async function registerRoutes(
       if (!affiliate) return res.status(404).json({ message: "Not found" });
       const conversions = await storage.getAffiliateConversions(affiliateId);
       const clicks = await storage.getAffiliateClicks(affiliateId);
-      const affiliateLink = `${BASE_URL}/?ref=${affiliate.affiliateCode}`;
+      const affiliateLink = `${BASE_URL}/signup?ref=${affiliate.affiliateCode}`;
       res.json({
         totalClicks: affiliate.totalClicks,
         totalConversions: affiliate.totalConversions,
@@ -844,7 +844,7 @@ export async function registerRoutes(
       const updated = await storage.updateAffiliate(req.params.id, { status });
       const { password, ...safe } = updated;
       const approved = status === "approved";
-      const affiliateLink = `${BASE_URL}/?ref=${updated.affiliateCode}`;
+      const affiliateLink = `${BASE_URL}/signup?ref=${updated.affiliateCode}`;
       sendAffiliateApprovalEmail(updated.fullName, updated.email, affiliateLink, approved).catch(console.error);
       res.json(safe);
     } catch (err: any) {

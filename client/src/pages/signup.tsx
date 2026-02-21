@@ -25,6 +25,14 @@ export default function SignUp() {
   const justSignedUp = useRef(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      fetch(`/api/affiliate/track/${ref}`).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
     if (justSignedUp.current && member) {
       navigate("/welcome");
     }
