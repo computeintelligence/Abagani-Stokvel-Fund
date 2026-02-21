@@ -36,8 +36,8 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-3 text-sm">Contact Us</h4>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <a href="tel:0787722258" className="flex items-center gap-2">
-                <Phone className="h-3 w-3" /> 078 772 2258
+              <a href="tel:0676083942" className="flex items-center gap-2">
+                <Phone className="h-3 w-3" /> 067 608 3942
               </a>
               <a href="mailto:info@abanganins.co.za" className="flex items-center gap-2">
                 <Mail className="h-3 w-3" /> info@abanganins.co.za

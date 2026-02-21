@@ -25,7 +25,7 @@ export default function Contact() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-12">
             {[
-              { icon: Phone, label: "Phone", value: "078 772 2258", href: "tel:0787722258" },
+              { icon: Phone, label: "Phone", value: "067 608 3942", href: "tel:0676083942" },
               { icon: Mail, label: "Email", value: "info@abanganins.co.za", href: "mailto:info@abanganins.co.za" },
               { icon: MapPin, label: "Location", value: "South Africa", href: null },
               { icon: Clock, label: "Business Hours", value: "Mon - Fri, 8am - 5pm", href: null },
@@ -54,7 +54,7 @@ export default function Contact() {
               We accept payments via bank transfer, online payment, or at Boxer, Pep, or Shoprite.
             </p>
             <p className="text-sm text-muted-foreground">
-              For payment assistance, call us at <strong>078 772 2258</strong>
+              For payment assistance, call us at <strong>067 608 3942</strong>
             </p>
           </Card>
         </div>

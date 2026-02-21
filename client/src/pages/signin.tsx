@@ -67,7 +67,7 @@ export default function SignIn() {
                   id="phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 0787722258"
+                  placeholder="e.g. 0676083942"
                   data-testid="input-signin-phone"
                 />
               </div>
