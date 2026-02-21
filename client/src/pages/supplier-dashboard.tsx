@@ -134,7 +134,7 @@ export default function SupplierDashboard() {
               {statusIcon}
               <span className="ml-1 capitalize">{supplier.status}</span>
             </Badge>
-            <Button variant="ghost" size="sm" onClick={logout} data-testid="button-supplier-logout">
+            <Button variant="ghost" size="sm" onClick={() => { logout(); window.location.href = "/"; }} data-testid="button-supplier-logout">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

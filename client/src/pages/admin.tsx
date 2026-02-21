@@ -11,11 +11,13 @@ import { MONTHS, PLANS } from "@shared/schema";
 import type { Member, Payment, Child } from "@shared/schema";
 import {
   Shield, Users, CheckCircle, CreditCard, Clock, Moon, Sun,
-  LogOut, Download, Trash2, Search, Mail, FileText, Eye
+  LogOut, Download, Trash2, Search, Mail, FileText, Eye,
+  Link2, Package, XCircle, UserCheck
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-provider";
 import { Footer } from "@/components/footer";
 import { StokvelLogo } from "@/components/navbar";
+import type { Supplier, Affiliate } from "@shared/schema";
 
 const ADMIN_CODE = "ABANGANI26";
 
@@ -161,6 +163,66 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await adminFetch(`/api/admin/members/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "Member deleted" });
+    },
+  });
+
+  const { data: suppliers } = useQuery<Supplier[]>({ queryKey: ["/api/admin/suppliers"] });
+  const { data: affiliatesData } = useQuery<Affiliate[]>({ queryKey: ["/api/admin/affiliates"] });
+
+  const updateSupplierStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await adminFetch(`/api/admin/suppliers/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/suppliers"] });
+      toast({ title: "Supplier status updated" });
+    },
+  });
+
+  const deleteSupplierMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await adminFetch(`/api/admin/suppliers/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/suppliers"] });
+      toast({ title: "Supplier deleted" });
+    },
+  });
+
+  const updateAffiliateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await adminFetch(`/api/admin/affiliates/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      toast({ title: "Affiliate status updated" });
+    },
+  });
+
+  const deleteAffiliateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await adminFetch(`/api/admin/affiliates/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      toast({ title: "Affiliate deleted" });
+    },
+  });
+
   const handlePdfExport = async () => {
     try {
       const res = await fetch("/api/admin/export?format=pdf", {
@@ -290,10 +352,12 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         </div>
 
         <Tabs defaultValue="members" data-testid="tabs-admin">
-          <TabsList>
-            <TabsTrigger value="members" data-testid="tab-admin-members">All Members ({filteredMembers.length})</TabsTrigger>
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="members" data-testid="tab-admin-members">Members ({filteredMembers.length})</TabsTrigger>
             <TabsTrigger value="payments" data-testid="tab-admin-payments">Payments ({pendingPayments.length})</TabsTrigger>
             <TabsTrigger value="arrears" data-testid="tab-admin-arrears">Arrears ({arrearsMembers.length})</TabsTrigger>
+            <TabsTrigger value="suppliers" data-testid="tab-admin-suppliers">Suppliers ({suppliers?.length || 0})</TabsTrigger>
+            <TabsTrigger value="affiliates" data-testid="tab-admin-affiliates">Affiliates ({affiliatesData?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="members" className="space-y-3 mt-4">
@@ -306,6 +370,9 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                   member={m}
                   expanded={expandedMember === m.id}
                   onToggleExpand={() => setExpandedMember(expandedMember === m.id ? null : m.id)}
+                  onDelete={() => {
+                    if (confirm("Are you sure you want to delete this member?")) deleteMemberMutation.mutate(m.id);
+                  }}
                 />
               ))
             )}
@@ -395,6 +462,156 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
               })
             )}
           </TabsContent>
+
+          <TabsContent value="suppliers" className="space-y-3 mt-4">
+            {!suppliers || suppliers.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground" data-testid="text-no-suppliers">No suppliers registered</Card>
+            ) : (
+              suppliers.map((s) => (
+                <Card key={s.id} className="p-4" data-testid={`card-supplier-${s.id}`}>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">{s.fullName} {s.surname}</p>
+                      <p className="text-sm font-medium text-primary">{s.businessName}</p>
+                      <p className="text-sm text-muted-foreground">{s.phone} | {s.email}</p>
+                      <p className="text-sm text-muted-foreground">{s.businessType} | {s.address}</p>
+                      {s.trackingNumber && (
+                        <p className="text-xs text-muted-foreground">Tracking: {s.trackingNumber}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.goodsSupplied?.map((g, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">{g}</Badge>
+                        ))}
+                      </div>
+                      <div className="mt-2">
+                        <Badge
+                          className={
+                            s.status === "approved" ? "bg-green-500/10 text-green-600 border-green-500/30" :
+                            s.status === "rejected" ? "bg-red-500/10 text-red-600 border-red-500/30" :
+                            "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                          }
+                        >
+                          {s.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {s.status === "rejected" && <XCircle className="h-3 w-3 mr-1" />}
+                          {s.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                          {s.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {s.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => updateSupplierStatusMutation.mutate({ id: s.id, status: "approved" })}
+                            disabled={updateSupplierStatusMutation.isPending}
+                            data-testid={`button-approve-supplier-${s.id}`}
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateSupplierStatusMutation.mutate({ id: s.id, status: "rejected" })}
+                            disabled={updateSupplierStatusMutation.isPending}
+                            data-testid={`button-reject-supplier-${s.id}`}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" /> Reject
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Delete this supplier?")) deleteSupplierMutation.mutate(s.id);
+                        }}
+                        data-testid={`button-delete-supplier-${s.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="affiliates" className="space-y-3 mt-4">
+            {!affiliatesData || affiliatesData.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground" data-testid="text-no-affiliates">No affiliates registered</Card>
+            ) : (
+              affiliatesData.map((a) => (
+                <Card key={a.id} className="p-4" data-testid={`card-affiliate-${a.id}`}>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">{a.fullName} {a.surname}</p>
+                      <p className="text-sm text-muted-foreground">{a.phone} | {a.email}</p>
+                      {a.trackingNumber && (
+                        <p className="text-xs text-muted-foreground">Tracking: {a.trackingNumber}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">Code: {a.affiliateCode}</p>
+                      <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                        <span>{a.totalClicks} clicks</span>
+                        <span>{a.totalConversions} conversions</span>
+                        <span>R{a.commissionEarned} earned</span>
+                      </div>
+                      {a.bankName && (
+                        <p className="text-xs text-muted-foreground">Bank: {a.bankName} | Acc: {a.accountNumber}</p>
+                      )}
+                      <div className="mt-2">
+                        <Badge
+                          className={
+                            a.status === "approved" ? "bg-green-500/10 text-green-600 border-green-500/30" :
+                            a.status === "rejected" ? "bg-red-500/10 text-red-600 border-red-500/30" :
+                            "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                          }
+                        >
+                          {a.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {a.status === "rejected" && <XCircle className="h-3 w-3 mr-1" />}
+                          {a.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                          {a.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {a.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => updateAffiliateStatusMutation.mutate({ id: a.id, status: "approved" })}
+                            disabled={updateAffiliateStatusMutation.isPending}
+                            data-testid={`button-approve-affiliate-${a.id}`}
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateAffiliateStatusMutation.mutate({ id: a.id, status: "rejected" })}
+                            disabled={updateAffiliateStatusMutation.isPending}
+                            data-testid={`button-reject-affiliate-${a.id}`}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" /> Reject
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Delete this affiliate?")) deleteAffiliateMutation.mutate(a.id);
+                        }}
+                        data-testid={`button-delete-affiliate-${a.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -403,10 +620,11 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
   );
 }
 
-function MemberCard({ member, expanded, onToggleExpand }: {
+function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
   member: Member & { children: Child[]; payments: Payment[] };
   expanded: boolean;
   onToggleExpand: () => void;
+  onDelete: () => void;
 }) {
   const plan = Object.values(PLANS).find((p) => p.name === member.plan);
   const paidCount = member.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
@@ -436,9 +654,14 @@ function MemberCard({ member, expanded, onToggleExpand }: {
             </p>
           )}
         </div>
-        <Button size="icon" variant="ghost" onClick={onToggleExpand} data-testid={`button-view-member-${member.id}`}>
-          <Eye className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={onToggleExpand} data-testid={`button-view-member-${member.id}`}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={onDelete} data-testid={`button-delete-member-${member.id}`}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {expanded && (

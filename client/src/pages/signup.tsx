@@ -42,12 +42,15 @@ export default function SignUp() {
     if (!canSubmit) return;
     setIsLoading(true);
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const affiliateRef = urlParams.get("ref") || undefined;
       const res = await apiRequest("POST", "/api/signup", {
         fullName,
         surname,
         email,
         phone,
         password,
+        affiliateRef,
       });
       const memberData = await res.json();
       justSignedUp.current = true;

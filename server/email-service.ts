@@ -230,3 +230,89 @@ export async function sendPaymentReminderEmail(name: string, email: string, amou
   const html = createHtmlEmail(body, `Friendly payment reminder - ${monthsList}`);
   await sendEmail(email, 'Payment Reminder - Abangani NS Group', html);
 }
+
+export async function sendSupplierRegistrationEmail(name: string, email: string, businessName: string, trackingNumber: string) {
+  if (!email) return;
+
+  const body = `<p>Dear ${name},</p>
+<p>Thank you for registering <strong>${businessName}</strong> as a supplier with Abangani Stokvel Fund.</p>
+<div class="highlight"><strong>Supplier Tracking Number:</strong> ${trackingNumber}<br><strong>Business:</strong> ${businessName}<br><strong>Status:</strong> Pending Approval</div>
+<p>Your application is currently under review by our team. We will notify you once your application has been approved.</p>
+<p><a href="${BASE_URL}/supplier/dashboard" class="cta">View Your Supplier Dashboard</a></p>
+<p>Thank you for your interest in supporting our families.</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const html = createHtmlEmail(body, 'Supplier registration received - pending approval');
+  await sendEmail(email, 'Supplier Registration Received - Abangani Stokvel Fund', html);
+}
+
+export async function sendSupplierApprovalEmail(name: string, email: string, businessName: string, approved: boolean) {
+  if (!email) return;
+
+  const statusText = approved ? 'Approved' : 'Declined';
+  const body = approved
+    ? `<p>Dear ${name},</p>
+<p>We are pleased to inform you that your supplier registration for <strong>${businessName}</strong> has been <strong>approved</strong>!</p>
+<p>You are now an official supplier partner of Abangani Stokvel Fund. You can log in to your dashboard to manage your profile and offerings.</p>
+<p><a href="${BASE_URL}/supplier/dashboard" class="cta">Go to Your Dashboard</a></p>
+<p>Welcome to the Abangani family!</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`
+    : `<p>Dear ${name},</p>
+<p>We regret to inform you that your supplier registration for <strong>${businessName}</strong> has not been approved at this time.</p>
+<p>If you believe this was an error or would like to update your application, please contact us or update your profile and resubmit.</p>
+<p>Thank you for your interest in Abangani Stokvel Fund.</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const html = createHtmlEmail(body, `Supplier registration ${statusText.toLowerCase()}`);
+  await sendEmail(email, `Supplier Registration ${statusText} - Abangani Stokvel Fund`, html);
+}
+
+export async function sendAffiliateRegistrationEmail(name: string, email: string, trackingNumber: string, affiliateCode: string, affiliateLink: string) {
+  if (!email) return;
+
+  const body = `<p>Dear ${name},</p>
+<p>Thank you for registering as an affiliate with Abangani Stokvel Fund!</p>
+<div class="highlight"><strong>Affiliate Tracking Number:</strong> ${trackingNumber}<br><strong>Affiliate Code:</strong> ${affiliateCode}<br><strong>Status:</strong> Pending Approval</div>
+<p>Once approved, you can start sharing your unique affiliate link and earn R50 commission for every person who signs up, registers with a plan, and makes their first payment (up to 100 conversions).</p>
+<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a></div>
+<p><a href="${BASE_URL}/affiliate/dashboard" class="cta">View Your Affiliate Dashboard</a></p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const html = createHtmlEmail(body, 'Affiliate registration received - your unique link is ready');
+  await sendEmail(email, 'Affiliate Registration Received - Abangani Stokvel Fund', html);
+}
+
+export async function sendAffiliateApprovalEmail(name: string, email: string, affiliateLink: string, approved: boolean) {
+  if (!email) return;
+
+  const statusText = approved ? 'Approved' : 'Declined';
+  const body = approved
+    ? `<p>Dear ${name},</p>
+<p>Great news! Your affiliate application has been <strong>approved</strong>!</p>
+<p>You can now start sharing your unique affiliate link and earn commissions:</p>
+<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a><br><br><strong>Commission:</strong> R50 per converted referral (up to 100 conversions = R5,000 potential earnings)</div>
+<p>A conversion happens when someone clicks your link, signs up, registers with a plan, and makes their first payment.</p>
+<p><a href="${BASE_URL}/affiliate/dashboard" class="cta">Go to Your Dashboard</a></p>
+<p>Start sharing and earning today!</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`
+    : `<p>Dear ${name},</p>
+<p>We regret to inform you that your affiliate application has not been approved at this time.</p>
+<p>If you have questions, please contact us for more information.</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const html = createHtmlEmail(body, `Affiliate application ${statusText.toLowerCase()}`);
+  await sendEmail(email, `Affiliate Application ${statusText} - Abangani Stokvel Fund`, html);
+}
+
+export async function sendContactFormEmail(fromName: string, fromEmail: string, subject: string, message: string) {
+  const body = `<p><strong>New Contact Form Submission</strong></p>
+<div class="highlight">
+<strong>From:</strong> ${fromName} (${fromEmail})<br>
+<strong>Subject:</strong> ${subject}
+</div>
+<p>${message.replace(/\n/g, '<br>')}</p>
+<p style="font-size:12px;color:#888;">This message was sent via the Abangani Stokvel Fund website contact form.</p>`;
+
+  const html = createHtmlEmail(body, `Contact form: ${subject}`);
+  await sendEmail('abanganinsgroup@gmail.com', `Contact Form: ${subject} - from ${fromName}`, html);
+}

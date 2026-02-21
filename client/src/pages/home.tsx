@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -214,6 +215,14 @@ function CTASection() {
 }
 
 export default function Home() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      fetch(`/api/affiliate/track/${ref}`).catch(() => {});
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

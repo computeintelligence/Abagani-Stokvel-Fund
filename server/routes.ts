@@ -3,10 +3,10 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
-import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema } from "@shared/schema";
-import type { Member, Supplier } from "@shared/schema";
+import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema, affiliateSignupSchema, affiliateLoginSchema, AFFILIATE_COMMISSION_PER_CONVERSION, AFFILIATE_MAX_CONVERSIONS } from "@shared/schema";
+import type { Member, Supplier, Affiliate } from "@shared/schema";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail } from "./email-service";
+import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail, sendSupplierRegistrationEmail, sendSupplierApprovalEmail, sendAffiliateRegistrationEmail, sendAffiliateApprovalEmail, sendContactFormEmail } from "./email-service";
 
 type PlanKey = keyof typeof PLANS;
 
@@ -23,6 +23,35 @@ function generateTrackingNumber(): string {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return `ABG-${year}-${code.slice(0, 4)}-${code.slice(4)}`;
+}
+
+function generateSupplierTrackingNumber(): string {
+  const year = new Date().getFullYear();
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `SUP-${year}-${code}`;
+}
+
+function generateAffiliateCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+function generateAffiliateTrackingNumber(): string {
+  const year = new Date().getFullYear();
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `AFF-${year}-${code}`;
 }
 
 function hashPassword(password: string): string {
@@ -93,6 +122,7 @@ export async function registerRoutes(
 
       const trackingNumber = generateTrackingNumber();
 
+      const affiliateRef = req.body.affiliateRef || null;
       const member = await storage.createMember({
         trackingNumber,
         fullName: data.fullName,
@@ -105,6 +135,7 @@ export async function registerRoutes(
         joinMonth: null,
         joinYear: null,
         address: null,
+        referredByAffiliate: affiliateRef,
         password: hashPassword(data.password),
       });
 
@@ -428,6 +459,17 @@ export async function registerRoutes(
         if (member?.email) {
           sendPaymentSuccessEmail(member.fullName, member.email, payment.amount, MONTHS[payment.month - 1], payment.year).catch(console.error);
         }
+
+        if (member?.referredByAffiliate) {
+          const memberPayments = await storage.getPaymentsByMember(member.id);
+          const verifiedPayments = memberPayments.filter(p => p.status === "verified");
+          if (verifiedPayments.length === 1) {
+            const affiliate = await storage.getAffiliateByCode(member.referredByAffiliate);
+            if (affiliate && affiliate.status === "approved" && affiliate.totalConversions < AFFILIATE_MAX_CONVERSIONS) {
+              await storage.createAffiliateConversion(affiliate.id, member.id, AFFILIATE_COMMISSION_PER_CONVERSION);
+            }
+          }
+        }
       }
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -573,12 +615,15 @@ export async function registerRoutes(
       if (!data.agreedToTerms) {
         return res.status(400).json({ message: "You must agree to the terms" });
       }
+      const trackingNumber = generateSupplierTrackingNumber();
       const supplier = await storage.createSupplier({
         ...data,
+        trackingNumber,
         password: hashPassword(data.password),
       });
       (req.session as any).supplierId = supplier.id;
       const { password, ...safe } = supplier;
+      sendSupplierRegistrationEmail(data.fullName, data.email, data.businessName, trackingNumber).catch(console.error);
       res.status(201).json(safe);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -631,6 +676,122 @@ export async function registerRoutes(
     }
   });
 
+  // ── Affiliate Routes ──────────────────────────────────────────────
+  const BASE_URL = process.env.REPLIT_DEPLOYMENT_URL
+    ? `https://${process.env.REPLIT_DEPLOYMENT_URL}`
+    : process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'http://localhost:5000';
+
+  app.post("/api/affiliate/signup", async (req: Request, res: Response) => {
+    try {
+      const data = affiliateSignupSchema.parse(req.body);
+      const existing = await storage.getAffiliateByPhone(data.phone);
+      if (existing) {
+        return res.status(400).json({ message: "An affiliate with this phone number already exists" });
+      }
+      if (!data.agreedToTerms) {
+        return res.status(400).json({ message: "You must agree to the terms" });
+      }
+      const trackingNumber = generateAffiliateTrackingNumber();
+      const affiliateCode = generateAffiliateCode();
+      const affiliate = await storage.createAffiliate({
+        ...data,
+        trackingNumber,
+        affiliateCode,
+        password: hashPassword(data.password),
+      });
+      (req.session as any).affiliateId = affiliate.id;
+      const { password, ...safe } = affiliate;
+      const affiliateLink = `${BASE_URL}/?ref=${affiliateCode}`;
+      sendAffiliateRegistrationEmail(data.fullName, data.email, trackingNumber, affiliateCode, affiliateLink).catch(console.error);
+      res.status(201).json({ ...safe, affiliateLink });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/affiliate/login", async (req: Request, res: Response) => {
+    try {
+      const data = affiliateLoginSchema.parse(req.body);
+      const affiliate = await storage.getAffiliateByPhone(data.phone);
+      if (!affiliate || affiliate.password !== hashPassword(data.password)) {
+        return res.status(401).json({ message: "Invalid phone or password" });
+      }
+      (req.session as any).affiliateId = affiliate.id;
+      const { password, ...safe } = affiliate;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/affiliate/me", async (req: Request, res: Response) => {
+    const affiliateId = (req.session as any)?.affiliateId;
+    if (!affiliateId) return res.status(401).json({ message: "Not authenticated" });
+    const affiliate = await storage.getAffiliateById(affiliateId);
+    if (!affiliate) return res.status(404).json({ message: "Affiliate not found" });
+    const { password, ...safe } = affiliate;
+    res.json(safe);
+  });
+
+  app.post("/api/affiliate/logout", (req: Request, res: Response) => {
+    delete (req.session as any).affiliateId;
+    res.json({ message: "Logged out" });
+  });
+
+  app.get("/api/affiliate/stats", async (req: Request, res: Response) => {
+    const affiliateId = (req.session as any)?.affiliateId;
+    if (!affiliateId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const affiliate = await storage.getAffiliateById(affiliateId);
+      if (!affiliate) return res.status(404).json({ message: "Not found" });
+      const conversions = await storage.getAffiliateConversions(affiliateId);
+      const clicks = await storage.getAffiliateClicks(affiliateId);
+      const affiliateLink = `${BASE_URL}/?ref=${affiliate.affiliateCode}`;
+      res.json({
+        totalClicks: affiliate.totalClicks,
+        totalConversions: affiliate.totalConversions,
+        commissionEarned: affiliate.commissionEarned,
+        maxConversions: AFFILIATE_MAX_CONVERSIONS,
+        commissionPerConversion: AFFILIATE_COMMISSION_PER_CONVERSION,
+        affiliateLink,
+        conversions: conversions.map(c => ({ ...c })),
+        recentClicks: clicks.slice(-20).reverse(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/affiliate/track/:code", async (req: Request, res: Response) => {
+    try {
+      const affiliate = await storage.getAffiliateByCode(req.params.code);
+      if (!affiliate) return res.status(404).json({ message: "Invalid affiliate link" });
+      const ip = req.ip || req.headers["x-forwarded-for"] as string || "";
+      const ua = req.headers["user-agent"] || "";
+      await storage.recordAffiliateClick(affiliate.id, ip, ua);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Contact Form Route ──────────────────────────────────────────────
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      sendContactFormEmail(name, email, subject, message).catch(console.error);
+      res.json({ message: "Message sent successfully" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Admin Supplier/Affiliate Routes ──────────────────────────────────
   app.get("/api/admin/suppliers", requireAdmin, async (_req: Request, res: Response) => {
     try {
       const allSuppliers = await storage.getAllSuppliers();
@@ -648,9 +809,55 @@ export async function registerRoutes(
       }
       const updated = await storage.updateSupplier(req.params.id, { status });
       const { password, ...safe } = updated;
+      const approved = status === "approved";
+      sendSupplierApprovalEmail(updated.fullName, updated.email, updated.businessName, approved).catch(console.error);
       res.json(safe);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/suppliers/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteSupplier(req.params.id);
+      res.json({ message: "Supplier deleted" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/affiliates", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const allAffiliates = await storage.getAllAffiliates();
+      res.json(allAffiliates.map(({ password, ...a }) => a));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/affiliates/:id/status", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const updated = await storage.updateAffiliate(req.params.id, { status });
+      const { password, ...safe } = updated;
+      const approved = status === "approved";
+      const affiliateLink = `${BASE_URL}/?ref=${updated.affiliateCode}`;
+      sendAffiliateApprovalEmail(updated.fullName, updated.email, affiliateLink, approved).catch(console.error);
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/affiliates/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteAffiliate(req.params.id);
+      res.json({ message: "Affiliate deleted" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 

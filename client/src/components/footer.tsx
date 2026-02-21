@@ -23,15 +23,14 @@ export function Footer() {
               <Link href="/about" data-testid="link-footer-about">About Us</Link>
               <Link href="/contact" data-testid="link-footer-contact">Contact</Link>
               <Link href="/signup" data-testid="link-footer-signup">Sign Up</Link>
-              <Link href="/supplier/signup" data-testid="link-footer-supplier">Register as Supplier</Link>
             </nav>
           </div>
           <div>
-            <h4 className="font-semibold mb-3 text-sm">Plans</h4>
+            <h4 className="font-semibold mb-3 text-sm">Registrations</h4>
             <nav className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <span>Primary School - R195/mo per child</span>
-              <span>High School - R295/mo per child</span>
-              <span>Cashback - From R500/mo</span>
+              <Link href="/signup" data-testid="link-footer-member">Register as Member</Link>
+              <Link href="/supplier/signup" data-testid="link-footer-supplier">Register as Supplier</Link>
+              <Link href="/affiliate/signup" data-testid="link-footer-affiliate">Register as Affiliate</Link>
             </nav>
           </div>
           <div>

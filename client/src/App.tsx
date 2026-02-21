@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider } from "@/lib/auth";
 import { SupplierAuthProvider } from "@/lib/supplier-auth";
+import { AffiliateAuthProvider } from "@/lib/affiliate-auth";
 import Home from "@/pages/home";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
@@ -19,6 +20,9 @@ import Admin from "@/pages/admin";
 import SupplierSignup from "@/pages/supplier-signup";
 import SupplierLogin from "@/pages/supplier-login";
 import SupplierDashboard from "@/pages/supplier-dashboard";
+import AffiliateSignup from "@/pages/affiliate-signup";
+import AffiliateLogin from "@/pages/affiliate-login";
+import AffiliateDashboard from "@/pages/affiliate-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +41,9 @@ function Router() {
       <Route path="/supplier/signup" component={SupplierSignup} />
       <Route path="/supplier/login" component={SupplierLogin} />
       <Route path="/supplier/dashboard" component={SupplierDashboard} />
+      <Route path="/affiliate/signup" component={AffiliateSignup} />
+      <Route path="/affiliate/login" component={AffiliateLogin} />
+      <Route path="/affiliate/dashboard" component={AffiliateDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -49,8 +56,10 @@ function App() {
         <ThemeProvider>
           <AuthProvider>
             <SupplierAuthProvider>
-              <Toaster />
-              <Router />
+              <AffiliateAuthProvider>
+                <Toaster />
+                <Router />
+              </AffiliateAuthProvider>
             </SupplierAuthProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -1,9 +1,10 @@
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import {
-  members, children, payments, suppliers,
+  members, children, payments, suppliers, affiliates, affiliateClicks, affiliateConversions,
   type Member, type InsertMember, type Child, type InsertChild,
   type Payment, type InsertPayment, type Supplier, type InsertSupplier,
+  type Affiliate, type InsertAffiliate, type AffiliateClick, type AffiliateConversion,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -40,6 +41,21 @@ export interface IStorage {
   getSupplierByPhone(phone: string): Promise<Supplier | undefined>;
   updateSupplier(id: string, data: Partial<Supplier>): Promise<Supplier>;
   getAllSuppliers(): Promise<Supplier[]>;
+  deleteSupplier(id: string): Promise<void>;
+
+  createAffiliate(data: InsertAffiliate & { trackingNumber: string; affiliateCode: string }): Promise<Affiliate>;
+  getAffiliateById(id: string): Promise<Affiliate | undefined>;
+  getAffiliateByPhone(phone: string): Promise<Affiliate | undefined>;
+  getAffiliateByCode(code: string): Promise<Affiliate | undefined>;
+  updateAffiliate(id: string, data: Partial<Affiliate>): Promise<Affiliate>;
+  getAllAffiliates(): Promise<Affiliate[]>;
+  deleteAffiliate(id: string): Promise<void>;
+
+  recordAffiliateClick(affiliateId: string, ipAddress?: string, userAgent?: string): Promise<void>;
+  getAffiliateClicks(affiliateId: string): Promise<AffiliateClick[]>;
+  createAffiliateConversion(affiliateId: string, memberId: string, commissionAmount: number): Promise<AffiliateConversion>;
+  getAffiliateConversions(affiliateId: string): Promise<AffiliateConversion[]>;
+  updateConversionStatus(id: string, status: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -179,6 +195,79 @@ export class DatabaseStorage implements IStorage {
 
   async getAllSuppliers(): Promise<Supplier[]> {
     return db.select().from(suppliers);
+  }
+
+  async deleteSupplier(id: string): Promise<void> {
+    await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+
+  async createAffiliate(data: InsertAffiliate & { trackingNumber: string; affiliateCode: string }): Promise<Affiliate> {
+    const [affiliate] = await db.insert(affiliates).values(data).returning();
+    return affiliate;
+  }
+
+  async getAffiliateById(id: string): Promise<Affiliate | undefined> {
+    const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.id, id));
+    return affiliate;
+  }
+
+  async getAffiliateByPhone(phone: string): Promise<Affiliate | undefined> {
+    const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.phone, phone));
+    return affiliate;
+  }
+
+  async getAffiliateByCode(code: string): Promise<Affiliate | undefined> {
+    const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.affiliateCode, code));
+    return affiliate;
+  }
+
+  async updateAffiliate(id: string, data: Partial<Affiliate>): Promise<Affiliate> {
+    const { id: _, createdAt, ...updateData } = data as any;
+    const [updated] = await db.update(affiliates).set(updateData).where(eq(affiliates.id, id)).returning();
+    return updated;
+  }
+
+  async getAllAffiliates(): Promise<Affiliate[]> {
+    return db.select().from(affiliates);
+  }
+
+  async deleteAffiliate(id: string): Promise<void> {
+    await db.delete(affiliateConversions).where(eq(affiliateConversions.affiliateId, id));
+    await db.delete(affiliateClicks).where(eq(affiliateClicks.affiliateId, id));
+    await db.delete(affiliates).where(eq(affiliates.id, id));
+  }
+
+  async recordAffiliateClick(affiliateId: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    await db.insert(affiliateClicks).values({ affiliateId, ipAddress, userAgent });
+    await db.update(affiliates).set({
+      totalClicks: sql`${affiliates.totalClicks} + 1`,
+    }).where(eq(affiliates.id, affiliateId));
+  }
+
+  async getAffiliateClicks(affiliateId: string): Promise<AffiliateClick[]> {
+    return db.select().from(affiliateClicks).where(eq(affiliateClicks.affiliateId, affiliateId));
+  }
+
+  async createAffiliateConversion(affiliateId: string, memberId: string, commissionAmount: number): Promise<AffiliateConversion> {
+    const [conversion] = await db.insert(affiliateConversions).values({
+      affiliateId,
+      memberId,
+      commissionAmount,
+      status: "earned",
+    }).returning();
+    await db.update(affiliates).set({
+      totalConversions: sql`${affiliates.totalConversions} + 1`,
+      commissionEarned: sql`${affiliates.commissionEarned} + ${commissionAmount}`,
+    }).where(eq(affiliates.id, affiliateId));
+    return conversion;
+  }
+
+  async getAffiliateConversions(affiliateId: string): Promise<AffiliateConversion[]> {
+    return db.select().from(affiliateConversions).where(eq(affiliateConversions.affiliateId, affiliateId));
+  }
+
+  async updateConversionStatus(id: string, status: string): Promise<void> {
+    await db.update(affiliateConversions).set({ status }).where(eq(affiliateConversions.id, id));
   }
 }
 
