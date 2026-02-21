@@ -677,11 +677,7 @@ export async function registerRoutes(
   });
 
   // ── Affiliate Routes ──────────────────────────────────────────────
-  const BASE_URL = process.env.REPLIT_DEPLOYMENT_URL
-    ? `https://${process.env.REPLIT_DEPLOYMENT_URL}`
-    : process.env.REPLIT_DEV_DOMAIN
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'http://localhost:5000';
+  const BASE_URL = 'https://abanganistokvelfund.co.za';
 
   app.post("/api/affiliate/signup", async (req: Request, res: Response) => {
     try {
