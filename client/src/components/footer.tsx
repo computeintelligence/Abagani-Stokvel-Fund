@@ -39,8 +39,8 @@ export function Footer() {
               <a href="tel:0676083942" className="flex items-center gap-2">
                 <Phone className="h-3 w-3" /> 067 608 3942
               </a>
-              <a href="mailto:info@abanganins.co.za" className="flex items-center gap-2">
-                <Mail className="h-3 w-3" /> info@abanganins.co.za
+              <a href="mailto:abanganinsgroup@gmail.com" className="flex items-center gap-2">
+                <Mail className="h-3 w-3" /> abanganinsgroup@gmail.com
               </a>
               <span className="flex items-center gap-2">
                 <MapPin className="h-3 w-3" /> South Africa

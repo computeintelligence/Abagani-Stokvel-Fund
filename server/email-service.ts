@@ -110,7 +110,7 @@ function createHtmlEmail(body: string, preheader: string = ''): string {
   <div class="body">${body}</div>
   <div class="footer">
     <p>Abangani NS Group &bull; South Africa</p>
-    <p>Phone: 067 608 3942 &bull; Email: info@abanganins.co.za</p>
+    <p>Phone: 067 608 3942 &bull; Email: abanganinsgroup@gmail.com</p>
     <p>&copy; ${new Date().getFullYear()} Abangani NS Group. All rights reserved.</p>
   </div>
 </div></body></html>`;
