@@ -339,7 +339,7 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Child>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [newChild, setNewChild] = useState({ fullName: "", school: "", grade: "", uniformSize: "", shoeSize: "" });
+  const [newChild, setNewChild] = useState({ fullName: "", gender: "", school: "", grade: "", uniformSize: "", shoeSize: "" });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Child> }) => {
@@ -359,7 +359,7 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/members", memberId, "children"] });
       setShowAdd(false);
-      setNewChild({ fullName: "", school: "", grade: "", uniformSize: "", shoeSize: "" });
+      setNewChild({ fullName: "", gender: "", school: "", grade: "", uniformSize: "", shoeSize: "" });
       toast({ title: "Child added" });
     },
   });
@@ -387,6 +387,13 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
       {showAdd && (
         <Card className="p-4 mb-4 space-y-3">
           <Input placeholder="Full Name" value={newChild.fullName} onChange={(e) => setNewChild({ ...newChild, fullName: e.target.value })} data-testid="input-new-child-name" />
+          <Select value={newChild.gender} onValueChange={(v) => setNewChild({ ...newChild, gender: v })}>
+            <SelectTrigger data-testid="select-new-child-gender"><SelectValue placeholder="Select gender" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Male">Male</SelectItem>
+              <SelectItem value="Female">Female</SelectItem>
+            </SelectContent>
+          </Select>
           <Input placeholder="School" value={newChild.school} onChange={(e) => setNewChild({ ...newChild, school: e.target.value })} data-testid="input-new-child-school" />
           <Select value={newChild.grade} onValueChange={(v) => setNewChild({ ...newChild, grade: v })}>
             <SelectTrigger data-testid="select-new-child-grade"><SelectValue placeholder="Select grade" /></SelectTrigger>
@@ -413,6 +420,13 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
             {editingId === child.id ? (
               <div className="space-y-3">
                 <Input value={editData.fullName || ""} onChange={(e) => setEditData({ ...editData, fullName: e.target.value })} placeholder="Full Name" />
+                <Select value={editData.gender || ""} onValueChange={(v) => setEditData({ ...editData, gender: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Input value={editData.school || ""} onChange={(e) => setEditData({ ...editData, school: e.target.value })} placeholder="School" />
                 <Select value={editData.grade || ""} onValueChange={(v) => setEditData({ ...editData, grade: v })}>
                   <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
@@ -428,7 +442,7 @@ function ChildrenTab({ children: childrenList, memberId }: { children: Child[]; 
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold">{child.fullName}</p>
+                  <p className="font-semibold">{child.fullName}{child.gender ? ` (${child.gender})` : ""}</p>
                   <p className="text-sm text-muted-foreground">{child.school} - {child.grade}</p>
                   {(child.uniformSize || child.shoeSize) && (
                     <p className="text-xs text-muted-foreground mt-1">

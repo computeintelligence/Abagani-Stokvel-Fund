@@ -22,6 +22,7 @@ type PlanKey = keyof typeof PLANS;
 
 interface ChildData {
   fullName: string;
+  gender: string;
   school: string;
   grade: string;
   uniformSize: string;
@@ -40,7 +41,7 @@ export default function Register() {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
   const [cashbackAmount, setCashbackAmount] = useState(500);
   const [children, setChildren] = useState<ChildData[]>([
-    { fullName: "", school: "", grade: "", uniformSize: "", shoeSize: "" },
+    { fullName: "", gender: "", school: "", grade: "", uniformSize: "", shoeSize: "" },
   ]);
   const [streetAddress, setStreetAddress] = useState("");
   const [city, setCity] = useState("");
@@ -101,7 +102,7 @@ export default function Register() {
   }
 
   const addChild = () => {
-    setChildren([...children, { fullName: "", school: "", grade: "", uniformSize: "", shoeSize: "" }]);
+    setChildren([...children, { fullName: "", gender: "", school: "", grade: "", uniformSize: "", shoeSize: "" }]);
   };
 
   const removeChild = (index: number) => {
@@ -138,6 +139,7 @@ export default function Register() {
         address: [streetAddress, city, province, postalCode].filter(Boolean).join(", ") || undefined,
         children: children.map((c) => ({
           fullName: c.fullName,
+          gender: c.gender || undefined,
           school: c.school,
           grade: c.grade,
           uniformSize: c.uniformSize || undefined,
@@ -264,14 +266,23 @@ export default function Register() {
                   type="number"
                   min={500}
                   step={50}
-                  value={cashbackAmount}
-                  onChange={(e) => setCashbackAmount(Math.max(500, parseInt(e.target.value) || 500))}
+                  value={cashbackAmount || ""}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setCashbackAmount(isNaN(val) ? 0 : val);
+                  }}
+                  onBlur={() => {
+                    if (cashbackAmount < 500) setCashbackAmount(500);
+                  }}
                   className="mb-2"
                   data-testid="input-cashback-amount"
                 />
+                {cashbackAmount < 500 && (
+                  <p className="text-xs text-destructive mb-2">Minimum amount is R500</p>
+                )}
                 <div className="text-sm text-muted-foreground">
-                  <p>Admin fee (12%): R{getCashbackFees(cashbackAmount).adminFee}</p>
-                  <p>Withdrawable savings: R{getCashbackFees(cashbackAmount).contribution}</p>
+                  <p>Admin fee (12%): R{getCashbackFees(Math.max(500, cashbackAmount)).adminFee}</p>
+                  <p>Withdrawable savings: R{getCashbackFees(Math.max(500, cashbackAmount)).contribution}</p>
                 </div>
               </Card>
             )}
@@ -311,6 +322,18 @@ export default function Register() {
                         placeholder="Child's full name"
                         data-testid={`input-child-name-${index}`}
                       />
+                    </div>
+                    <div>
+                      <Label>Gender</Label>
+                      <Select value={child.gender} onValueChange={(v) => updateChild(index, "gender", v)}>
+                        <SelectTrigger data-testid={`select-child-gender-${index}`}>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label>School</Label>
@@ -448,7 +471,7 @@ export default function Register() {
               <div>
                 <p className="text-sm text-muted-foreground">Children ({children.length})</p>
                 {children.map((c, i) => (
-                  <p key={i} className="font-semibold">{c.fullName} - {c.school} ({c.grade})</p>
+                  <p key={i} className="font-semibold">{c.fullName}{c.gender ? ` (${c.gender})` : ""} - {c.school} ({c.grade})</p>
                 ))}
               </div>
               <div>

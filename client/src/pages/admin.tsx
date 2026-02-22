@@ -475,6 +475,9 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                       <p className="text-sm font-medium text-primary">{s.businessName}</p>
                       <p className="text-sm text-muted-foreground">{s.phone} | {s.email}</p>
                       <p className="text-sm text-muted-foreground">{s.businessType} | {s.address}</p>
+                      {s.createdAt && (
+                        <p className="text-xs text-muted-foreground">Registered: {new Date(s.createdAt).toLocaleDateString("en-ZA")}</p>
+                      )}
                       {s.trackingNumber && (
                         <p className="text-xs text-muted-foreground">Tracking: {s.trackingNumber}</p>
                       )}
@@ -547,6 +550,9 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{a.fullName} {a.surname}</p>
                       <p className="text-sm text-muted-foreground">{a.phone} | {a.email}</p>
+                      {a.createdAt && (
+                        <p className="text-xs text-muted-foreground">Registered: {new Date(a.createdAt).toLocaleDateString("en-ZA")}</p>
+                      )}
                       {a.trackingNumber && (
                         <p className="text-xs text-muted-foreground">Tracking: {a.trackingNumber}</p>
                       )}
@@ -641,6 +647,9 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
               <Mail className="h-3 w-3" /> {member.email}
             </p>
           )}
+          {member.createdAt && (
+            <p className="text-xs text-muted-foreground">Registered: {new Date(member.createdAt).toLocaleDateString("en-ZA")}</p>
+          )}
           <div className="flex flex-wrap gap-1 mt-1">
             <Badge variant="secondary">{member.plan || "No plan"}</Badge>
             <Badge variant="outline">{member.trackingNumber}</Badge>
@@ -650,7 +659,7 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
           </div>
           {member.children.length > 0 && (
             <p className="text-xs text-muted-foreground mt-1">
-              Children: {member.children.map((c) => `${c.fullName} (${c.grade})`).join(", ")}
+              Children: {member.children.map((c) => `${c.fullName}${c.gender ? ` - ${c.gender}` : ""} (${c.grade})`).join(", ")}
             </p>
           )}
         </div>
@@ -695,7 +704,7 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
               <div className="space-y-2">
                 {member.children.map((c) => (
                   <div key={c.id} className="text-sm bg-accent/10 rounded p-2">
-                    <p className="font-medium">{c.fullName}</p>
+                    <p className="font-medium">{c.fullName}{c.gender ? ` (${c.gender})` : ""}</p>
                     <p className="text-muted-foreground">{c.school} - {c.grade}{c.uniformSize ? `, Size: ${c.uniformSize}` : ""}{c.shoeSize ? `, Shoe: ${c.shoeSize}` : ""}</p>
                   </div>
                 ))}

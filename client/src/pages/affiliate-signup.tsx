@@ -32,7 +32,6 @@ export default function AffiliateSignup() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [idNumber, setIdNumber] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [addressCity, setAddressCity] = useState("");
   const [addressProvince, setAddressProvince] = useState("");
@@ -62,7 +61,6 @@ export default function AffiliateSignup() {
         email,
         phone,
         password,
-        idNumber: idNumber || undefined,
         address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", ") || undefined,
         agreedToTerms: agreed,
       });
@@ -138,10 +136,6 @@ export default function AffiliateSignup() {
               <div>
                 <Label>Phone Number</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0712345678" data-testid="input-affiliate-phone" />
-              </div>
-              <div>
-                <Label>ID Number (optional)</Label>
-                <Input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} placeholder="SA ID number" data-testid="input-affiliate-id" />
               </div>
               <div>
                 <Label>Street Address (optional)</Label>
