@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema, affiliateSignupSchema, affiliateLoginSchema, AFFILIATE_COMMISSION_PER_CONVERSION, AFFILIATE_MAX_CONVERSIONS } from "@shared/schema";
 import type { Member, Supplier, Affiliate } from "@shared/schema";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail, sendSupplierRegistrationEmail, sendSupplierApprovalEmail, sendAffiliateRegistrationEmail, sendAffiliateApprovalEmail, sendContactFormEmail } from "./email-service";
+import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail, sendSupplierRegistrationEmail, sendSupplierApprovalEmail, sendAffiliateRegistrationEmail, sendAffiliateApprovalEmail, sendContactFormEmail, sendWithdrawalInvoiceEmail } from "./email-service";
 
 type PlanKey = keyof typeof PLANS;
 
@@ -751,6 +751,7 @@ export async function registerRoutes(
         commissionEarned: affiliate.commissionEarned,
         maxConversions: AFFILIATE_MAX_CONVERSIONS,
         commissionPerConversion: AFFILIATE_COMMISSION_PER_CONVERSION,
+        canWithdraw: affiliate.totalConversions >= AFFILIATE_MAX_CONVERSIONS,
         affiliateLink,
         conversions: conversions.map(c => ({ ...c })),
         recentClicks: clicks.slice(-20).reverse(),
@@ -768,6 +769,31 @@ export async function registerRoutes(
       const ua = req.headers["user-agent"] || "";
       await storage.recordAffiliateClick(affiliate.id, ip, ua);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/affiliate/withdraw", async (req: Request, res: Response) => {
+    const affiliateId = (req.session as any)?.affiliateId;
+    if (!affiliateId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const affiliate = await storage.getAffiliateById(affiliateId);
+      if (!affiliate) return res.status(404).json({ message: "Not found" });
+      if (affiliate.totalConversions < AFFILIATE_MAX_CONVERSIONS) {
+        return res.status(400).json({ message: `You need at least ${AFFILIATE_MAX_CONVERSIONS} paid referrals to withdraw. You currently have ${affiliate.totalConversions}.` });
+      }
+      sendWithdrawalInvoiceEmail(
+        affiliate.fullName,
+        affiliate.email,
+        affiliate.phone,
+        affiliate.trackingNumber,
+        affiliate.bankName,
+        affiliate.accountNumber,
+        affiliate.totalConversions,
+        affiliate.commissionEarned
+      ).catch(console.error);
+      res.json({ message: "Withdrawal invoice has been sent. You will be notified when the payment is processed." });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

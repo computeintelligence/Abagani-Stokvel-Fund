@@ -4,13 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAffiliateAuth } from "@/lib/affiliate-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { StokvelLogo } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import {
   Link2, Copy, LogOut, TrendingUp, Users, DollarSign,
-  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink
+  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote
 } from "lucide-react";
 
 interface AffiliateStats {
@@ -19,6 +20,7 @@ interface AffiliateStats {
   commissionEarned: number;
   maxConversions: number;
   commissionPerConversion: number;
+  canWithdraw: boolean;
   affiliateLink: string;
   conversions: Array<{ id: string; memberId: string; commissionAmount: number; status: string; convertedAt: string }>;
   recentClicks: Array<{ id: string; createdAt: string }>;
@@ -57,6 +59,20 @@ export default function AffiliateDashboard() {
       toast({ title: "Link copied!", description: "Your affiliate link has been copied to clipboard." });
     }
   };
+
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/affiliate/withdraw");
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Withdrawal Submitted", description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/affiliate/stats"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Withdrawal Failed", description: error.message, variant: "destructive" });
+    },
+  });
 
   const statusColor = {
     pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
@@ -165,7 +181,20 @@ export default function AffiliateDashboard() {
             </div>
 
             <Card className="p-6">
-              <h3 className="text-lg font-bold mb-3">Earnings Progress</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold">Earnings Progress</h3>
+                {stats.canWithdraw && (
+                  <Button
+                    onClick={() => withdrawMutation.mutate()}
+                    disabled={withdrawMutation.isPending}
+                    className="gap-2"
+                    data-testid="button-withdraw"
+                  >
+                    <Banknote className="h-4 w-4" />
+                    {withdrawMutation.isPending ? "Submitting..." : "Withdraw"}
+                  </Button>
+                )}
+              </div>
               <div className="w-full bg-muted rounded-full h-4 mb-2">
                 <div
                   className="bg-primary h-4 rounded-full transition-all"
@@ -173,8 +202,13 @@ export default function AffiliateDashboard() {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                {stats.totalConversions} / {stats.maxConversions} conversions (R{stats.commissionEarned} / R{stats.maxConversions * stats.commissionPerConversion} max)
+                {stats.totalConversions} / {stats.maxConversions} paid referrals (R{stats.commissionEarned} / R{stats.maxConversions * stats.commissionPerConversion} max)
               </p>
+              {!stats.canWithdraw && stats.totalConversions > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  You need {stats.maxConversions - stats.totalConversions} more paid referrals to unlock withdrawals.
+                </p>
+              )}
             </Card>
 
             {stats.conversions.length > 0 && (

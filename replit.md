@@ -59,8 +59,9 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Separate auth context (AffiliateAuthProvider) with session-based auth (affiliateId in session)
 - 3-step registration wizard: Personal Details → Banking Details (optional) → Agreement
 - Affiliate dashboard with unique link, click/conversion stats, earnings progress bar
-- Commission: R50 per conversion, max 100 conversions (R5,000 max earnings)
+- Commission: R5 per paid referral, withdraw after 1,000 paid referrals (R5,000 max earnings)
 - Conversion flow: Click affiliate link → signup with ?ref=CODE → register → first payment verified → commission credited
+- Withdrawal: Auto-generated invoice sent to admin (abanganinsgroup@gmail.com) + confirmation to affiliate when they click Withdraw at 1,000+ referrals
 - Tracking numbers: AFF-YYYY-XXXXXX format
 - Admin can view all affiliates and approve/reject/delete via admin panel
 
@@ -72,8 +73,10 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - **Supplier registration**: Sent on supplier signup with tracking number
 - **Affiliate registration**: Sent on affiliate signup with tracking number
 - **Supplier/Affiliate approval**: Sent when admin approves supplier or affiliate
-- **Contact form**: Routes messages to abanganinsgroup@gmail.com
+- **Withdrawal invoice**: Auto-generated when affiliate requests withdrawal at 1,000+ referrals, sent to admin + affiliate
+- **Contact form**: Routes messages to abanganinsgroup@gmail.com (form on /contact page)
 - All emails use professional HTML templates with Abangani branding
+- All email links use custom domain: https://abanganistokvelfund.co.za
 
 ## Shared Components
 - `components/navbar.tsx` - Navigation bar with auth-aware links, custom SVG stokvel logo
@@ -135,6 +138,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/affiliate/logout` - Affiliate logout
 - GET `/api/affiliate/stats` - Dashboard statistics (clicks, conversions, earnings, link)
 - GET `/api/affiliate/track/:code` - Record affiliate link click
+- POST `/api/affiliate/withdraw` - Request commission withdrawal (requires 1000+ referrals)
 
 ### Contact
 - POST `/api/contact` - Send contact form message to abanganinsgroup@gmail.com

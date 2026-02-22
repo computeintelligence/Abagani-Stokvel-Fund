@@ -1,11 +1,44 @@
+import { useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Phone, Mail, MapPin, Clock } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Phone, Mail, MapPin, Clock, Send, Loader2 } from "lucide-react";
 
 export default function Contact() {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
+
+  const contactMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/contact", formData);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Message Sent", description: "Thank you for reaching out. We'll get back to you soon." });
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to Send", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      toast({ title: "Missing Fields", description: "Please fill in all fields.", variant: "destructive" });
+      return;
+    }
+    contactMutation.mutate();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -19,7 +52,7 @@ export default function Contact() {
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto text-lg">
               Have questions? We're here to help. Reach out to us through any of
-              the channels below.
+              the channels below or send us a message.
             </p>
           </div>
 
@@ -47,6 +80,69 @@ export default function Contact() {
               </Card>
             ))}
           </div>
+
+          <Card className="p-6 md:p-8 mb-8">
+            <h2 className="text-xl font-bold mb-6" data-testid="text-contact-form-title">Send Us a Message</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contact-name">Full Name</Label>
+                  <Input
+                    id="contact-name"
+                    placeholder="Your full name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    data-testid="input-contact-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-email">Email Address</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    data-testid="input-contact-email"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact-subject">Subject</Label>
+                <Input
+                  id="contact-subject"
+                  placeholder="What is your enquiry about?"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  data-testid="input-contact-subject"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact-message">Message</Label>
+                <Textarea
+                  id="contact-message"
+                  placeholder="Type your message here..."
+                  rows={5}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  data-testid="input-contact-message"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto gap-2"
+                disabled={contactMutation.isPending}
+                data-testid="button-contact-submit"
+              >
+                {contactMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                {contactMutation.isPending ? "Sending..." : "Send Message"}
+              </Button>
+            </form>
+          </Card>
 
           <Card className="p-6 md:p-8 text-center">
             <h2 className="text-xl font-bold mb-2">Payment Methods</h2>

@@ -85,7 +85,7 @@ export default function AffiliateSignup() {
           <Link2 className="h-12 w-12 text-primary mx-auto mb-3" />
           <h1 className="text-3xl font-bold" data-testid="text-affiliate-signup-title">Become an Affiliate</h1>
           <p className="text-muted-foreground mt-2">
-            Earn R50 for every person you refer who signs up and pays their first month
+            Earn R5 for every person you refer who signs up and pays their first month
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function AffiliateSignup() {
             <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-semibold">How It Works</p>
-              <p className="text-muted-foreground">Share your unique affiliate link with friends. When they sign up, register with a plan, and make their first payment, you earn R50 commission. You can earn up to R5,000 (100 conversions).</p>
+              <p className="text-muted-foreground">Share your unique affiliate link with friends. When they sign up, register with a plan, and make their first payment, you earn R5 commission. Withdraw your earnings after reaching 1,000 paid referrals (R5,000 potential earnings).</p>
             </div>
           </div>
         </Card>
@@ -193,8 +193,8 @@ export default function AffiliateSignup() {
 
             <div className="space-y-3 text-sm mb-6 max-h-48 overflow-y-auto pr-2">
               <p>I, <strong>{fullName} {surname}</strong>, hereby apply to become an affiliate agent for Abangani Stokvel Fund.</p>
-              <p>I understand that I will receive a unique affiliate link upon registration. When someone uses my link to sign up, registers for a plan, and makes their first payment, I will earn a commission of <strong>R50 per conversion</strong>.</p>
-              <p>I acknowledge that commissions are capped at <strong>100 conversions</strong> (R5,000 maximum earnings).</p>
+              <p>I understand that I will receive a unique affiliate link upon registration. When someone uses my link to sign up, registers for a plan, and makes their first payment, I will earn a commission of <strong>R5 per paid referral</strong>.</p>
+              <p>I acknowledge that withdrawals are available after reaching <strong>1,000 paid referrals</strong> (R5,000 maximum earnings).</p>
               <p>I agree to promote Abangani Stokvel Fund honestly and ethically, without making misleading claims about the service.</p>
               <p>My registration is subject to approval by Abangani Stokvel Fund administrators.</p>
               <p>I understand that commissions will be paid out after verification.</p>

@@ -149,7 +149,7 @@ export default function Welcome() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-lg">Affiliate</h3>
                         <p className="text-sm text-muted-foreground">
-                          Earn R50 commission for every person you refer who joins
+                          Earn R5 commission for every person you refer who joins
                         </p>
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />

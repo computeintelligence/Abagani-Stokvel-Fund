@@ -256,8 +256,8 @@ export const affiliateLoginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const AFFILIATE_COMMISSION_PER_CONVERSION = 50;
-export const AFFILIATE_MAX_CONVERSIONS = 100;
+export const AFFILIATE_COMMISSION_PER_CONVERSION = 5;
+export const AFFILIATE_MAX_CONVERSIONS = 1000;
 
 export const MONTHS = [
   "January", "February", "March", "April", "May", "June",

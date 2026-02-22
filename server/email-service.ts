@@ -63,7 +63,7 @@ async function generateEmailContent(prompt: string): Promise<string> {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional email marketing copywriter for Abangani NS Group, a South African stokvel platform that helps parents save for school uniforms and stationery. Write warm, encouraging, professional emails in simple English. Always maintain a supportive community tone. Keep emails concise but compelling. Use the Rand (R) currency symbol. Do not use markdown formatting - write plain text that reads naturally. Do not include subject lines in the body.'
+            content: 'You are a professional email marketing copywriter for Abangani NS Group, a South African stokvel platform that helps parents save for school uniforms and stationery. Write warm, encouraging, professional emails in simple English. Always maintain a supportive community tone. Keep emails concise but compelling. Use the Rand (R) currency symbol. Do not use markdown formatting - write plain text that reads naturally. Do not include subject lines in the body. IMPORTANT: Do NOT include any URLs or links in your text - links will be added separately after your content. Never generate any website addresses, domain names, or clickable links.'
           },
           { role: 'user', content: prompt }
         ],
@@ -133,11 +133,7 @@ async function sendEmail(to: string, subject: string, htmlBody: string) {
   }
 }
 
-const BASE_URL = process.env.REPLIT_DEV_DOMAIN
-  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-  : process.env.REPL_SLUG
-  ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-  : 'http://localhost:5000';
+const BASE_URL = 'https://abanganistokvelfund.co.za';
 
 export async function sendWelcomeEmail(name: string, email: string) {
   if (!email) return;
@@ -273,7 +269,7 @@ export async function sendAffiliateRegistrationEmail(name: string, email: string
   const body = `<p>Dear ${name},</p>
 <p>Thank you for registering as an affiliate with Abangani Stokvel Fund!</p>
 <div class="highlight"><strong>Affiliate Tracking Number:</strong> ${trackingNumber}<br><strong>Affiliate Code:</strong> ${affiliateCode}<br><strong>Status:</strong> Pending Approval</div>
-<p>Once approved, you can start sharing your unique affiliate link and earn R50 commission for every person who signs up, registers with a plan, and makes their first payment (up to 100 conversions).</p>
+<p>Once approved, you can start sharing your unique affiliate link and earn R5 commission for every referred paid member. You can withdraw your earnings after reaching 1,000 paid referrals (R5,000 potential earnings).</p>
 <div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a></div>
 <p><a href="${BASE_URL}/affiliate/dashboard" class="cta">View Your Affiliate Dashboard</a></p>
 <p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
@@ -290,7 +286,7 @@ export async function sendAffiliateApprovalEmail(name: string, email: string, af
     ? `<p>Dear ${name},</p>
 <p>Great news! Your affiliate application has been <strong>approved</strong>!</p>
 <p>You can now start sharing your unique affiliate link and earn commissions:</p>
-<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a><br><br><strong>Commission:</strong> R50 per converted referral (up to 100 conversions = R5,000 potential earnings)</div>
+<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a><br><br><strong>Commission:</strong> R5 per referred paid member (withdraw after 1,000 paid referrals = R5,000 potential earnings)</div>
 <p>A conversion happens when someone clicks your link, signs up, registers with a plan, and makes their first payment.</p>
 <p><a href="${BASE_URL}/affiliate/dashboard" class="cta">Go to Your Dashboard</a></p>
 <p>Start sharing and earning today!</p>
@@ -302,6 +298,74 @@ export async function sendAffiliateApprovalEmail(name: string, email: string, af
 
   const html = createHtmlEmail(body, `Affiliate application ${statusText.toLowerCase()}`);
   await sendEmail(email, `Affiliate Application ${statusText} - Abangani Stokvel Fund`, html);
+}
+
+export async function sendWithdrawalInvoiceEmail(
+  affiliateName: string,
+  affiliateEmail: string,
+  affiliatePhone: string,
+  trackingNumber: string,
+  bankName: string | null,
+  accountNumber: string | null,
+  totalConversions: number,
+  commissionEarned: number
+) {
+  const invoiceNumber = `INV-${trackingNumber}-${Date.now().toString(36).toUpperCase()}`;
+  const invoiceDate = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const adminBody = `<p><strong>Affiliate Withdrawal Invoice</strong></p>
+<div class="highlight">
+<strong>Invoice Number:</strong> ${invoiceNumber}<br>
+<strong>Date:</strong> ${invoiceDate}<br>
+<strong>Affiliate:</strong> ${affiliateName}<br>
+<strong>Email:</strong> ${affiliateEmail}<br>
+<strong>Phone:</strong> ${affiliatePhone}<br>
+<strong>Tracking Number:</strong> ${trackingNumber}
+</div>
+<div class="highlight">
+<strong>Banking Details:</strong><br>
+Bank: ${bankName || 'Not provided'}<br>
+Account Number: ${accountNumber || 'Not provided'}
+</div>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+<tr style="background:#2d7a5a;color:#fff;">
+<th style="padding:10px;text-align:left;">Description</th>
+<th style="padding:10px;text-align:right;">Qty</th>
+<th style="padding:10px;text-align:right;">Rate</th>
+<th style="padding:10px;text-align:right;">Amount</th>
+</tr>
+<tr style="border-bottom:1px solid #e0e0e0;">
+<td style="padding:10px;">Affiliate Referral Commission</td>
+<td style="padding:10px;text-align:right;">${totalConversions}</td>
+<td style="padding:10px;text-align:right;">R5.00</td>
+<td style="padding:10px;text-align:right;">R${commissionEarned.toLocaleString()}</td>
+</tr>
+<tr style="background:#f4f7f6;font-weight:bold;">
+<td colspan="3" style="padding:10px;text-align:right;">Total Payable:</td>
+<td style="padding:10px;text-align:right;">R${commissionEarned.toLocaleString()}</td>
+</tr>
+</table>
+<p>The affiliate <strong>${affiliateName}</strong> has reached ${totalConversions} paid referrals and is requesting a withdrawal of R${commissionEarned.toLocaleString()}.</p>
+<p style="font-size:12px;color:#888;">This invoice was automatically generated by the Abangani Stokvel Fund system.</p>`;
+
+  const adminHtml = createHtmlEmail(adminBody, `Withdrawal Invoice from ${affiliateName}`);
+  await sendEmail('abanganinsgroup@gmail.com', `Withdrawal Invoice - ${affiliateName} (${trackingNumber})`, adminHtml);
+
+  const affiliateBody = `<p>Dear ${affiliateName},</p>
+<p>Your withdrawal request has been submitted successfully!</p>
+<div class="highlight">
+<strong>Invoice Number:</strong> ${invoiceNumber}<br>
+<strong>Date:</strong> ${invoiceDate}<br>
+<strong>Total Referrals:</strong> ${totalConversions}<br>
+<strong>Amount:</strong> R${commissionEarned.toLocaleString()}
+</div>
+<p>Our team will process your withdrawal and transfer the funds to your registered bank account. You will be notified once the payment has been made.</p>
+<p>If you have any questions, please contact us at abanganinsgroup@gmail.com or call 067 608 3942.</p>
+<p><a href="${BASE_URL}/affiliate/dashboard" class="cta">View Your Dashboard</a></p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const affiliateHtml = createHtmlEmail(affiliateBody, 'Your withdrawal invoice has been submitted');
+  await sendEmail(affiliateEmail, 'Withdrawal Invoice Submitted - Abangani Stokvel Fund', affiliateHtml);
 }
 
 export async function sendContactFormEmail(fromName: string, fromEmail: string, subject: string, message: string) {
