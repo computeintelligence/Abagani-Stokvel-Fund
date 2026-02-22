@@ -41,10 +41,10 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 
 ## Database Tables
 - `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration), referredByAffiliate
-- `children` - Children linked to members with school/grade info
+- `children` - Children linked to members with school/grade/gender info
 - `payments` - Monthly payment records (12 per member per year)
 - `suppliers` - Supplier business accounts with goods supplied, status (pending/approved/rejected)
-- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats
+- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats (no ID number field)
 - `affiliate_clicks` - Records of clicks on affiliate links
 - `affiliate_conversions` - Conversion records when referred members make first payment
 
