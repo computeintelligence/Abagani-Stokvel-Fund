@@ -205,7 +205,7 @@ export default function AffiliateDashboard() {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                {stats.totalConversions} / {stats.maxConversions} paid referrals (R{stats.commissionEarned} / R{stats.maxConversions * stats.commissionPerConversion} max)
+                {stats.totalConversions} / {stats.maxConversions} paid referrals (R{stats.commissionEarned} / R{stats.maxConversions} max)
               </p>
               {!stats.canWithdraw && stats.totalConversions > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
