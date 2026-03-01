@@ -1,6 +1,23 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { StokvelLogo } from "./navbar";
+
+function FooterLink({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: any }) {
+  const [, navigate] = useLocation();
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(href);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
 
 export function Footer() {
   return (
@@ -19,18 +36,18 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-3 text-sm">Quick Links</h4>
             <nav className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <Link href="/" data-testid="link-footer-home">Home</Link>
-              <Link href="/about" data-testid="link-footer-about">About Us</Link>
-              <Link href="/contact" data-testid="link-footer-contact">Contact</Link>
-              <Link href="/signup" data-testid="link-footer-signup">Sign Up</Link>
+              <FooterLink href="/" data-testid="link-footer-home">Home</FooterLink>
+              <FooterLink href="/about" data-testid="link-footer-about">About Us</FooterLink>
+              <FooterLink href="/contact" data-testid="link-footer-contact">Contact</FooterLink>
+              <FooterLink href="/signup" data-testid="link-footer-signup">Sign Up</FooterLink>
             </nav>
           </div>
           <div>
             <h4 className="font-semibold mb-3 text-sm">Registrations</h4>
             <nav className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <Link href="/signup" data-testid="link-footer-member">Register as Member</Link>
-              <Link href="/supplier/signup" data-testid="link-footer-supplier">Register as Supplier</Link>
-              <Link href="/affiliate/signup" data-testid="link-footer-affiliate">Register as Affiliate</Link>
+              <FooterLink href="/signup" data-testid="link-footer-member">Register as Member</FooterLink>
+              <FooterLink href="/supplier/signup" data-testid="link-footer-supplier">Register as Supplier</FooterLink>
+              <FooterLink href="/affiliate/signup" data-testid="link-footer-affiliate">Register as Affiliate</FooterLink>
             </nav>
           </div>
           <div>
@@ -50,7 +67,7 @@ export function Footer() {
         </div>
         <div className="border-t pt-6 text-center text-xs text-muted-foreground space-y-1">
           <p>&copy; {new Date().getFullYear()} Abangani Stokvel Fund. All rights reserved.</p>
-          <p>Powered by Abangani NS Group</p>
+          <p>Powered by Abangani NS Group (Pty) Ltd, Registration Number: 2019/604564/07</p>
         </div>
       </div>
     </footer>

@@ -269,7 +269,7 @@ export async function sendAffiliateRegistrationEmail(name: string, email: string
   const body = `<p>Dear ${name},</p>
 <p>Thank you for registering as an affiliate with Abangani Stokvel Fund!</p>
 <div class="highlight"><strong>Affiliate Tracking Number:</strong> ${trackingNumber}<br><strong>Affiliate Code:</strong> ${affiliateCode}<br><strong>Status:</strong> Pending Approval</div>
-<p>Once approved, you can start sharing your unique affiliate link and earn R5 commission for every referred paid member. You can withdraw your earnings after reaching 1,000 paid referrals (R5,000 potential earnings).</p>
+<p>Once approved, you can start sharing your unique affiliate link and earn R5 commission for every referred paid member. You can withdraw your earnings after reaching 200 paid referrals (R1,000 potential earnings).</p>
 <div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a></div>
 <p><a href="${BASE_URL}/affiliate/dashboard" class="cta">View Your Affiliate Dashboard</a></p>
 <p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
@@ -286,7 +286,7 @@ export async function sendAffiliateApprovalEmail(name: string, email: string, af
     ? `<p>Dear ${name},</p>
 <p>Great news! Your affiliate application has been <strong>approved</strong>!</p>
 <p>You can now start sharing your unique affiliate link and earn commissions:</p>
-<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a><br><br><strong>Commission:</strong> R5 per referred paid member (withdraw after 1,000 paid referrals = R5,000 potential earnings)</div>
+<div class="highlight"><strong>Your Affiliate Link:</strong><br><a href="${affiliateLink}">${affiliateLink}</a><br><br><strong>Commission:</strong> R5 per referred paid member (withdraw after 200 paid referrals = R1,000 potential earnings)</div>
 <p>A conversion happens when someone clicks your link, signs up, registers with a plan, and makes their first payment.</p>
 <p><a href="${BASE_URL}/affiliate/dashboard" class="cta">Go to Your Dashboard</a></p>
 <p>Start sharing and earning today!</p>

@@ -12,7 +12,7 @@ import type { Member, Payment, Child } from "@shared/schema";
 import {
   Shield, Users, CheckCircle, CreditCard, Clock, Moon, Sun,
   LogOut, Download, Trash2, Search, Mail, FileText, Eye,
-  Link2, Package, XCircle, UserCheck
+  Link2, Package, XCircle, UserCheck, RefreshCw
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-provider";
 import { Footer } from "@/components/footer";
@@ -284,6 +284,9 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
             <span className="font-bold" data-testid="text-admin-brand">Abangani Stokvel Fund - Admin</span>
           </div>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => { adminQueryClient.invalidateQueries(); }} data-testid="button-admin-refresh">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" onClick={handlePdfExport} data-testid="button-admin-pdf-export">
               <FileText className="h-4 w-4 mr-2" />
               PDF

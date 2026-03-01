@@ -59,9 +59,9 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Separate auth context (AffiliateAuthProvider) with session-based auth (affiliateId in session)
 - 3-step registration wizard: Personal Details → Banking Details (optional) → Agreement
 - Affiliate dashboard with unique link, click/conversion stats, earnings progress bar
-- Commission: R5 per paid referral, withdraw after 1,000 paid referrals (R5,000 max earnings)
+- Commission: R5 per paid referral, withdraw after 200 paid referrals (R1,000 max earnings)
 - Conversion flow: Click affiliate link → signup with ?ref=CODE → register → first payment verified → commission credited
-- Withdrawal: Auto-generated invoice sent to admin (abanganinsgroup@gmail.com) + confirmation to affiliate when they click Withdraw at 1,000+ referrals
+- Withdrawal: Auto-generated invoice sent to admin (abanganinsgroup@gmail.com) + confirmation to affiliate when they click Withdraw at 200+ referrals
 - Tracking numbers: AFF-YYYY-XXXXXX format
 - Admin can view all affiliates and approve/reject/delete via admin panel
 
@@ -73,14 +73,14 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - **Supplier registration**: Sent on supplier signup with tracking number
 - **Affiliate registration**: Sent on affiliate signup with tracking number
 - **Supplier/Affiliate approval**: Sent when admin approves supplier or affiliate
-- **Withdrawal invoice**: Auto-generated when affiliate requests withdrawal at 1,000+ referrals, sent to admin + affiliate
+- **Withdrawal invoice**: Auto-generated when affiliate requests withdrawal at 200+ referrals, sent to admin + affiliate
 - **Contact form**: Routes messages to abanganinsgroup@gmail.com (form on /contact page)
 - All emails use professional HTML templates with Abangani branding
 - All email links use custom domain: https://abanganistokvelfund.co.za
 
 ## Shared Components
 - `components/navbar.tsx` - Navigation bar with auth-aware links, custom SVG stokvel logo
-- `components/footer.tsx` - Shared footer with quick links, plans, contact info, "Powered by Abangani NS Group"
+- `components/footer.tsx` - Shared footer with quick links, plans, contact info, scroll-to-top nav, "Powered by Abangani NS Group (Pty) Ltd, Registration Number: 2019/604564/07"
 
 ## Security
 - Session-based auth with SESSION_SECRET from env (secure cookies in production)

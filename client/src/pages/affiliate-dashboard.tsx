@@ -11,7 +11,7 @@ import { StokvelLogo } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import {
   Link2, Copy, LogOut, TrendingUp, Users, DollarSign,
-  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote
+  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote, RefreshCw
 } from "lucide-react";
 
 interface AffiliateStats {
@@ -103,6 +103,9 @@ export default function AffiliateDashboard() {
               {statusIcon}
               <span className="ml-1 capitalize">{affiliate.status}</span>
             </Badge>
+            <Button variant="ghost" size="icon" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/affiliate/stats"] })} data-testid="button-affiliate-refresh">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-affiliate-logout">
               <LogOut className="h-4 w-4" />
             </Button>
