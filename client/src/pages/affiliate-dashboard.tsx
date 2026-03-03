@@ -14,6 +14,14 @@ import {
   MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote, RefreshCw
 } from "lucide-react";
 
+interface ReferredMember {
+  id: string;
+  fullName: string;
+  surname: string;
+  plan: string | null;
+  createdAt: string;
+}
+
 interface AffiliateStats {
   totalClicks: number;
   totalConversions: number;
@@ -22,7 +30,8 @@ interface AffiliateStats {
   commissionPerConversion: number;
   canWithdraw: boolean;
   affiliateLink: string;
-  conversions: Array<{ id: string; memberId: string; commissionAmount: number; status: string; convertedAt: string }>;
+  conversions: Array<{ id: string; memberId: string; commissionAmount: number; status: string; convertedAt: string; memberName: string; memberPlan: string | null }>;
+  referredMembers: ReferredMember[];
   recentClicks: Array<{ id: string; createdAt: string }>;
 }
 
@@ -214,24 +223,40 @@ export default function AffiliateDashboard() {
               )}
             </Card>
 
-            {stats.conversions.length > 0 && (
+            {stats.referredMembers.length > 0 && (
               <Card className="p-6">
-                <h3 className="text-lg font-bold mb-3">Recent Conversions</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-bold">Referred Members ({stats.referredMembers.length})</h3>
+                </div>
                 <div className="space-y-2">
-                  {stats.conversions.map((conv) => (
-                    <div key={conv.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Conversion</span>
+                  {stats.referredMembers.map((member) => {
+                    const conversion = stats.conversions.find(c => c.memberId === member.id);
+                    return (
+                      <div key={member.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg" data-testid={`referred-member-${member.id}`}>
+                        <div className="flex items-center gap-2">
+                          {conversion ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-yellow-500" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">{member.fullName} {member.surname}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.plan || "No plan yet"} | Joined {new Date(member.createdAt).toLocaleDateString("en-ZA")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {conversion ? (
+                            <span className="text-sm font-semibold text-green-600" data-testid={`text-commission-${member.id}`}>+R{conversion.commissionAmount}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Awaiting payment</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-sm font-semibold text-green-600">+R{conv.commissionAmount}</span>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(conv.convertedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             )}

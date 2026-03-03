@@ -568,6 +568,21 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                       {a.bankName && (
                         <p className="text-xs text-muted-foreground">Bank: {a.bankName} | Acc: {a.accountNumber}</p>
                       )}
+                      {a.referredMembers && a.referredMembers.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Referred Members ({a.referredMembers.length}):</p>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {a.referredMembers.map((rm: any) => (
+                              <div key={rm.id} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1" data-testid={`admin-referred-${rm.id}`}>
+                                <Users className="h-3 w-3 flex-shrink-0" />
+                                <span>{rm.fullName} {rm.surname}</span>
+                                <span className="text-muted-foreground/60">|</span>
+                                <span>{rm.plan || "No plan"}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="mt-2">
                         <Badge
                           className={

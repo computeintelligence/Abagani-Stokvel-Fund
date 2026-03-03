@@ -744,7 +744,27 @@ export async function registerRoutes(
       if (!affiliate) return res.status(404).json({ message: "Not found" });
       const conversions = await storage.getAffiliateConversions(affiliateId);
       const clicks = await storage.getAffiliateClicks(affiliateId);
+      const referredMembers = await storage.getMembersByAffiliateCode(affiliate.affiliateCode);
       const affiliateLink = `${BASE_URL}/signup?ref=${affiliate.affiliateCode}`;
+
+      const memberMap = new Map(referredMembers.map(m => [m.id, m]));
+      const enrichedConversions = conversions.map(c => {
+        const member = memberMap.get(c.memberId);
+        return {
+          ...c,
+          memberName: member ? `${member.fullName} ${member.surname}` : "Unknown",
+          memberPlan: member?.plan || null,
+        };
+      });
+
+      const referredList = referredMembers.map(m => ({
+        id: m.id,
+        fullName: m.fullName,
+        surname: m.surname,
+        plan: m.plan,
+        createdAt: m.createdAt,
+      }));
+
       res.json({
         totalClicks: affiliate.totalClicks,
         totalConversions: affiliate.totalConversions,
@@ -753,7 +773,8 @@ export async function registerRoutes(
         commissionPerConversion: AFFILIATE_COMMISSION_PER_CONVERSION,
         canWithdraw: affiliate.totalConversions >= AFFILIATE_MAX_CONVERSIONS,
         affiliateLink,
-        conversions: conversions.map(c => ({ ...c })),
+        conversions: enrichedConversions,
+        referredMembers: referredList,
         recentClicks: clicks.slice(-20).reverse(),
       });
     } catch (err: any) {
@@ -851,7 +872,24 @@ export async function registerRoutes(
   app.get("/api/admin/affiliates", requireAdmin, async (_req: Request, res: Response) => {
     try {
       const allAffiliates = await storage.getAllAffiliates();
-      res.json(allAffiliates.map(({ password, ...a }) => a));
+      const affiliatesWithReferrals = await Promise.all(
+        allAffiliates.map(async ({ password, ...a }) => {
+          const referred = await storage.getMembersByAffiliateCode(a.affiliateCode);
+          return {
+            ...a,
+            referredMembers: referred.map(m => ({
+              id: m.id,
+              fullName: m.fullName,
+              surname: m.surname,
+              plan: m.plan,
+              status: m.status,
+              trackingNumber: m.trackingNumber,
+              createdAt: m.createdAt,
+            })),
+          };
+        })
+      );
+      res.json(affiliatesWithReferrals);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

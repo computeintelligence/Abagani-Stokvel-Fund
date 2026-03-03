@@ -56,6 +56,7 @@ export interface IStorage {
   createAffiliateConversion(affiliateId: string, memberId: string, commissionAmount: number): Promise<AffiliateConversion>;
   getAffiliateConversions(affiliateId: string): Promise<AffiliateConversion[]>;
   updateConversionStatus(id: string, status: string): Promise<void>;
+  getMembersByAffiliateCode(affiliateCode: string): Promise<Member[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -268,6 +269,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateConversionStatus(id: string, status: string): Promise<void> {
     await db.update(affiliateConversions).set({ status }).where(eq(affiliateConversions.id, id));
+  }
+
+  async getMembersByAffiliateCode(affiliateCode: string): Promise<Member[]> {
+    return db.select().from(members).where(eq(members.referredByAffiliate, affiliateCode));
   }
 }
 

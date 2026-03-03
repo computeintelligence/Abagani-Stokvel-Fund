@@ -58,12 +58,12 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 ## Affiliate System
 - Separate auth context (AffiliateAuthProvider) with session-based auth (affiliateId in session)
 - 3-step registration wizard: Personal Details → Banking Details (optional) → Agreement
-- Affiliate dashboard with unique link, click/conversion stats, earnings progress bar
+- Affiliate dashboard with unique link, click/conversion stats, earnings progress bar, referred members list with commission status
 - Commission: R5 per paid referral, withdraw after 200 paid referrals (R1,000 max earnings)
 - Conversion flow: Click affiliate link → signup with ?ref=CODE → register → first payment verified → commission credited
 - Withdrawal: Auto-generated invoice sent to admin (abanganinsgroup@gmail.com) + confirmation to affiliate when they click Withdraw at 200+ referrals
 - Tracking numbers: AFF-YYYY-XXXXXX format
-- Admin can view all affiliates and approve/reject/delete via admin panel
+- Admin can view all affiliates with referred members list, approve/reject/delete via admin panel
 
 ## Email Automation (server/email-service.ts)
 - **Welcome email**: Sent on signup with AI-generated content via Together AI
