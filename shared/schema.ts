@@ -42,6 +42,7 @@ export const payments = pgTable("payments", {
   status: text("status").notNull().default("unpaid"),
   paymentMethod: text("payment_method"),
   reference: text("reference"),
+  proofOfPayment: text("proof_of_payment"),
   paidAt: timestamp("paid_at"),
   verifiedAt: timestamp("verified_at"),
 });
@@ -150,7 +151,7 @@ export const suppliers = pgTable("suppliers", {
   address: text("address").notNull(),
   goodsSupplied: text("goods_supplied").array().notNull(),
   agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("approved"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -197,7 +198,7 @@ export const affiliates = pgTable("affiliates", {
   bankName: text("bank_name"),
   accountNumber: text("account_number"),
   agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("approved"),
   totalClicks: integer("total_clicks").notNull().default(0),
   totalConversions: integer("total_conversions").notNull().default(0),
   commissionEarned: integer("commission_earned").notNull().default(0),

@@ -306,21 +306,31 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6 flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
           <Card className="p-4 text-center" data-testid="card-stat-total">
             <Users className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats?.totalMembers || 0}</p>
-            <p className="text-xs text-muted-foreground">Total Members</p>
+            <p className="text-xs text-muted-foreground">Members</p>
           </Card>
           <Card className="p-4 text-center" data-testid="card-stat-active">
             <CheckCircle className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats?.active || 0}</p>
             <p className="text-xs text-muted-foreground">Active</p>
           </Card>
+          <Card className="p-4 text-center" data-testid="card-stat-suppliers">
+            <Package className="h-6 w-6 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats?.totalSuppliers || 0}</p>
+            <p className="text-xs text-muted-foreground">Suppliers</p>
+          </Card>
+          <Card className="p-4 text-center" data-testid="card-stat-affiliates">
+            <Link2 className="h-6 w-6 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats?.totalAffiliates || 0}</p>
+            <p className="text-xs text-muted-foreground">Affiliates</p>
+          </Card>
           <Card className="p-4 text-center" data-testid="card-stat-revenue">
             <CreditCard className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">R{stats?.totalRevenue || 0}</p>
-            <p className="text-xs text-muted-foreground">Total Revenue</p>
+            <p className="text-xs text-muted-foreground">Revenue</p>
           </Card>
           <Card className="p-4 text-center" data-testid="card-stat-pending">
             <Clock className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
@@ -387,17 +397,34 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
             ) : (
               pendingPayments.map(({ payment: p, member: m }) => (
                 <Card key={p.id} className="p-4" data-testid={`card-payment-${p.id}`}>
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
                       <p className="font-semibold" data-testid={`text-payment-member-${p.id}`}>{m.fullName} {m.surname}</p>
                       <p className="text-sm text-muted-foreground">
                         R{p.amount} - {MONTHS[p.month - 1]} {p.year}
                       </p>
                       {p.paymentMethod && (
-                        <p className="text-sm text-muted-foreground">via {p.paymentMethod}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Method: <span className="capitalize font-medium">{p.paymentMethod === "eft" ? "EFT" : p.paymentMethod === "bank" ? "Bank" : p.paymentMethod === "boxer" ? "Boxer" : p.paymentMethod}</span>
+                        </p>
                       )}
                       {p.reference && (
                         <p className="text-sm text-muted-foreground">Ref: {p.reference}</p>
+                      )}
+                      {m.trackingNumber && (
+                        <p className="text-xs text-muted-foreground">Tracking: {m.trackingNumber}</p>
+                      )}
+                      {(p as any).proofOfPayment && (
+                        <a
+                          href={(p as any).proofOfPayment}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                          data-testid={`link-proof-${p.id}`}
+                        >
+                          <Eye className="h-3 w-3" />
+                          View Proof of Payment
+                        </a>
                       )}
                     </div>
                     <div className="flex gap-1">

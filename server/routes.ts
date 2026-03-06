@@ -2,6 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema, affiliateSignupSchema, affiliateLoginSchema, AFFILIATE_COMMISSION_PER_CONVERSION, AFFILIATE_MAX_CONVERSIONS } from "@shared/schema";
 import type { Member, Supplier, Affiliate } from "@shared/schema";
@@ -110,6 +113,43 @@ export async function registerRoutes(
       },
     })
   );
+
+  const uploadsDir = path.join(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: uploadsDir,
+      filename: (_req, file, cb) => {
+        const uniqueName = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = [".jpg", ".jpeg", ".png", ".pdf", ".webp"];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (allowed.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only JPG, PNG, WebP and PDF files are allowed"));
+      }
+    },
+  });
+
+  app.get("/api/uploads/:filename", (req: Request, res: Response) => {
+    const memberId = (req.session as any)?.memberId;
+    const adminCode = req.headers["x-admin-code"];
+    if (!memberId && adminCode !== ADMIN_CODE) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
+    res.sendFile(filePath);
+  });
 
   app.post("/api/signup", async (req, res) => {
     try {
@@ -333,15 +373,31 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/members/:id/payments/submit", requireAuth, requireOwnMember, async (req, res) => {
+  app.post("/api/members/:id/payments/submit", requireAuth, requireOwnMember, upload.single("proofOfPayment"), async (req, res) => {
     try {
       const { month, year, paymentMethod, reference } = req.body;
-      const payments = await storage.getPaymentsByMember(req.params.id);
-      const payment = payments.find((p) => p.month === month && p.year === year);
+      const allowedMethods = ["eft", "bank", "boxer"];
+      if (!paymentMethod || !allowedMethods.includes(paymentMethod)) {
+        return res.status(400).json({ message: "Invalid payment method. Choose EFT, Bank, or Boxer." });
+      }
+      if (!reference || typeof reference !== "string" || reference.trim().length === 0) {
+        return res.status(400).json({ message: "Payment reference is required." });
+      }
+      if (!req.file) {
+        return res.status(400).json({ message: "Proof of payment file is required." });
+      }
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+      if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
+        return res.status(400).json({ message: "Invalid month or year." });
+      }
+      const memberPayments = await storage.getPaymentsByMember(req.params.id);
+      const payment = memberPayments.find((p) => p.month === monthNum && p.year === yearNum);
       if (!payment) {
         return res.status(404).json({ message: "Payment record not found" });
       }
-      await storage.updatePaymentStatus(payment.id, "pending", reference, paymentMethod);
+      const proofPath = `/api/uploads/${req.file.filename}`;
+      await storage.updatePaymentStatus(payment.id, "pending", reference.trim(), paymentMethod, proofPath);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });

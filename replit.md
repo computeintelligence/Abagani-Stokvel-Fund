@@ -42,9 +42,9 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 ## Database Tables
 - `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration), referredByAffiliate
 - `children` - Children linked to members with school/grade/gender info
-- `payments` - Monthly payment records (12 per member per year)
-- `suppliers` - Supplier business accounts with goods supplied, status (pending/approved/rejected)
-- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats (no ID number field)
+- `payments` - Monthly payment records (12 per member per year) with proofOfPayment file path
+- `suppliers` - Supplier business accounts with goods supplied, status (default: approved)
+- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats (no ID number field, default status: approved)
 - `affiliate_clicks` - Records of clicks on affiliate links
 - `affiliate_conversions` - Conversion records when referred members make first payment
 
@@ -106,7 +106,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - GET/POST `/api/members/:id/children` - Children CRUD (ownership enforced)
 - PATCH/DELETE `/api/children/:id` - Child update/delete (ownership enforced)
 - GET `/api/members/:id/payments` - Payment records
-- POST `/api/members/:id/payments/submit` - Submit payment
+- POST `/api/members/:id/payments/submit` - Submit payment (multipart with proof of payment file)
 - GET `/api/members/:id/export` - Export payments (CSV/PDF)
 
 ### Admin
@@ -138,7 +138,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/affiliate/logout` - Affiliate logout
 - GET `/api/affiliate/stats` - Dashboard statistics (clicks, conversions, earnings, link)
 - GET `/api/affiliate/track/:code` - Record affiliate link click
-- POST `/api/affiliate/withdraw` - Request commission withdrawal (requires 1000+ referrals)
+- POST `/api/affiliate/withdraw` - Request commission withdrawal (requires 200+ referrals)
 
 ### Contact
 - POST `/api/contact` - Send contact form message to abanganinsgroup@gmail.com

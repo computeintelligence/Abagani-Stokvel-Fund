@@ -186,6 +186,7 @@ export default function Dashboard() {
               planAmount={member.planAmount || 0}
               canPay={canPay}
               memberId={member.id}
+              trackingNumber={member.trackingNumber}
             />
           </TabsContent>
 
@@ -202,26 +203,49 @@ export default function Dashboard() {
   );
 }
 
-function PaymentsTab({ payments, planAmount, canPay, memberId }: {
+function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }: {
   payments: Payment[];
   planAmount: number;
   canPay: boolean;
   memberId: string;
+  trackingNumber: string;
 }) {
   const { toast } = useToast();
-  const [paymentMethod, setPaymentMethod] = useState("retailer");
+  const [paymentMethod, setPaymentMethod] = useState("eft");
   const [reference, setReference] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
+  const boxerSurcharge = 20;
+  const getPaymentAmount = (method: string) => {
+    return method === "boxer" ? planAmount + boxerSurcharge : planAmount;
+  };
 
   const payMutation = useMutation({
     mutationFn: async ({ month, year }: { month: number; year: number }) => {
-      await apiRequest("POST", `/api/members/${memberId}/payments/submit`, {
-        month, year, paymentMethod, reference,
+      const formData = new FormData();
+      formData.append("month", String(month));
+      formData.append("year", String(year));
+      formData.append("paymentMethod", paymentMethod);
+      formData.append("reference", reference);
+      if (proofFile) {
+        formData.append("proofOfPayment", proofFile);
+      }
+      const res = await fetch(`/api/members/${memberId}/payments/submit`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Payment submission failed");
+      }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/members", memberId, "payments"] });
-      toast({ title: "Payment submitted!", description: "Your payment is pending verification." });
+      toast({ title: "Payment submitted!", description: "Your payment is pending verification by admin." });
       setReference("");
+      setProofFile(null);
     },
     onError: (err: Error) => {
       toast({ title: "Payment failed", description: err.message, variant: "destructive" });
@@ -229,6 +253,17 @@ function PaymentsTab({ payments, planAmount, canPay, memberId }: {
   });
 
   const sorted = [...payments].sort((a, b) => a.month - b.month);
+
+  const bankDetails = (
+    <Card className="p-3 bg-muted/30 border-muted text-xs space-y-1">
+      <p className="font-semibold text-sm">Bank Account Details</p>
+      <p>Bank: <strong>Capitec</strong></p>
+      <p>Account Name: <strong>Abangani NS Group</strong></p>
+      <p>Account Number: <strong>1234567890</strong></p>
+      <p>Branch Code: <strong>470010</strong></p>
+      <p>Reference: <strong>{trackingNumber}</strong></p>
+    </Card>
+  );
 
   return (
     <div>
@@ -278,44 +313,106 @@ function PaymentsTab({ payments, planAmount, canPay, memberId }: {
                   <DialogTrigger asChild>
                     <Badge variant="destructive" className="cursor-pointer" data-testid={`badge-unpaid-${payment.month}`}>
                       <AlertCircle className="h-3 w-3 mr-1" />
-                      Unpaid
+                      Unpaid - Pay Now
                     </Badge>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Pay for {MONTHS[payment.month - 1]} {payment.year}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">Amount: <strong>R{planAmount}</strong></p>
                       <div>
                         <Label>Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v)}>
                           <SelectTrigger data-testid="select-payment-method">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="retailer">Retailer (Shoprite/PnP)</SelectItem>
-                            <SelectItem value="eft">EFT / Bank Transfer</SelectItem>
-                            <SelectItem value="cash">Cash</SelectItem>
+                            <SelectItem value="eft">EFT (Bank Transfer)</SelectItem>
+                            <SelectItem value="bank">Bank (In-Branch Payment)</SelectItem>
+                            <SelectItem value="boxer">Boxer (+R{boxerSurcharge} surcharge)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <div className="rounded-lg border p-3 bg-primary/5">
+                        <p className="text-sm font-semibold mb-1">Amount Due</p>
+                        <p className="text-2xl font-bold text-primary" data-testid="text-payment-amount">
+                          R{getPaymentAmount(paymentMethod)}
+                        </p>
+                        {paymentMethod === "boxer" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Includes R{boxerSurcharge} Boxer surcharge (R{planAmount} + R{boxerSurcharge})
+                          </p>
+                        )}
+                      </div>
+
+                      {(paymentMethod === "eft" || paymentMethod === "bank") && bankDetails}
+
+                      {paymentMethod === "eft" && (
+                        <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
+                          <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay via EFT</p>
+                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                            <li>Transfer R{planAmount} to the account above</li>
+                            <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
+                            <li>Upload your proof of payment below</li>
+                          </ol>
+                        </Card>
+                      )}
+
+                      {paymentMethod === "bank" && (
+                        <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
+                          <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay at your bank</p>
+                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                            <li>Visit any branch and pay R{planAmount} into the account above</li>
+                            <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
+                            <li>Upload your proof of payment below</li>
+                          </ol>
+                        </Card>
+                      )}
+
+                      {paymentMethod === "boxer" && (
+                        <Card className="p-3 bg-orange-500/5 border-orange-500/20 text-xs">
+                          <p className="font-semibold text-sm text-orange-700 dark:text-orange-400">How to pay at Boxer</p>
+                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                            <li>Visit any Boxer store and pay R{getPaymentAmount("boxer")}</li>
+                            <li>Mention your tracking number <strong>{trackingNumber}</strong></li>
+                            <li>Keep your receipt and upload the proof of payment below</li>
+                          </ol>
+                        </Card>
+                      )}
+
                       <div>
-                        <Label>Reference Number</Label>
+                        <Label>Reference / Receipt Number</Label>
                         <Input
                           value={reference}
                           onChange={(e) => setReference(e.target.value)}
-                          placeholder="Enter payment reference"
+                          placeholder="Enter your payment reference or receipt number"
                           data-testid="input-reference"
                         />
                       </div>
+
+                      <div>
+                        <Label>Proof of Payment (Image or PDF)</Label>
+                        <Input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.pdf,.webp"
+                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                          data-testid="input-proof-of-payment"
+                          className="mt-1"
+                        />
+                        {proofFile && (
+                          <p className="text-xs text-muted-foreground mt-1">Selected: {proofFile.name}</p>
+                        )}
+                      </div>
+
                       <Button
                         className="w-full"
                         onClick={() => payMutation.mutate({ month: payment.month, year: payment.year })}
-                        disabled={!reference || payMutation.isPending}
+                        disabled={!reference || !proofFile || payMutation.isPending}
                         data-testid="button-submit-payment"
                       >
-                        {payMutation.isPending ? "Submitting..." : `Pay R${planAmount}`}
+                        {payMutation.isPending ? "Submitting..." : `Submit Payment - R${getPaymentAmount(paymentMethod)}`}
                       </Button>
                     </div>
                   </DialogContent>

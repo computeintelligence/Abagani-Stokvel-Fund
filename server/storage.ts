@@ -24,7 +24,7 @@ export interface IStorage {
   createPayment(data: InsertPayment): Promise<Payment>;
   getPaymentsByMember(memberId: string): Promise<Payment[]>;
   getAllPayments(): Promise<Payment[]>;
-  updatePaymentStatus(id: string, status: string, reference?: string, method?: string): Promise<void>;
+  updatePaymentStatus(id: string, status: string, reference?: string, method?: string, proofOfPayment?: string): Promise<void>;
 
   getStats(): Promise<{
     totalMembers: number;
@@ -32,6 +32,8 @@ export interface IStorage {
     pending: number;
     totalRevenue: number;
     tierBreakdown: Record<string, number>;
+    totalSuppliers: number;
+    totalAffiliates: number;
   }>;
 
   getMembersWithDetails(): Promise<(Member & { children: Child[]; payments: Payment[] })[]>;
@@ -126,7 +128,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(payments);
   }
 
-  async updatePaymentStatus(id: string, status: string, reference?: string, method?: string): Promise<void> {
+  async updatePaymentStatus(id: string, status: string, reference?: string, method?: string, proofOfPayment?: string): Promise<void> {
     const updateData: any = { status };
     if (status === "paid" || status === "verified") {
       updateData.paidAt = new Date();
@@ -134,12 +136,15 @@ export class DatabaseStorage implements IStorage {
     }
     if (reference) updateData.reference = reference;
     if (method) updateData.paymentMethod = method;
+    if (proofOfPayment) updateData.proofOfPayment = proofOfPayment;
     await db.update(payments).set(updateData).where(eq(payments.id, id));
   }
 
   async getStats() {
     const allMembers = await this.getAllMembers();
     const allPayments = await this.getAllPayments();
+    const allSuppliers = await this.getAllSuppliers();
+    const allAffiliates = await this.getAllAffiliates();
 
     const active = allMembers.filter((m) => m.status === "active").length;
     const pending = allMembers.filter((m) => m.status === "pending").length;
@@ -159,6 +164,8 @@ export class DatabaseStorage implements IStorage {
       pending,
       totalRevenue,
       tierBreakdown,
+      totalSuppliers: allSuppliers.length,
+      totalAffiliates: allAffiliates.length,
     };
   }
 
