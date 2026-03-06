@@ -107,7 +107,7 @@ export default function Dashboard() {
   const totalExpected = (paymentsData?.length || 0) * (member.planAmount || 0);
   const progressPercent = totalExpected > 0 ? (totalPaid / totalExpected) * 100 : 0;
 
-  const paymentStartDate = new Date(2026, 2, 10);
+  const paymentStartDate = new Date(2026, 2, 1);
   const now = new Date();
   const canPay = now >= paymentStartDate;
 
@@ -257,10 +257,9 @@ function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }:
   const bankDetails = (
     <Card className="p-3 bg-muted/30 border-muted text-xs space-y-1">
       <p className="font-semibold text-sm">Bank Account Details</p>
-      <p>Bank: <strong>Capitec</strong></p>
-      <p>Account Name: <strong>Abangani NS Group</strong></p>
-      <p>Account Number: <strong>1234567890</strong></p>
-      <p>Branch Code: <strong>470010</strong></p>
+      <p>Bank: <strong>FNB (First National Bank)</strong></p>
+      <p>Account Name: <strong>Stokvel</strong></p>
+      <p>Account Number: <strong>63199744781</strong></p>
       <p>Reference: <strong>{trackingNumber}</strong></p>
     </Card>
   );
@@ -280,7 +279,7 @@ function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }:
       {!canPay && (
         <Card className="p-4 mb-4 border-primary/20 bg-primary/5" data-testid="card-payment-info">
           <p className="text-sm">
-            Payments will be available from <strong>10 March 2026</strong>. You can register now
+            Payments will be available from <strong>1 March 2026</strong>. You can register now
             and start paying from that date.
           </p>
         </Card>
