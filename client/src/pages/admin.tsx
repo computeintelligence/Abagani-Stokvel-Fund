@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MONTHS, PLANS } from "@shared/schema";
@@ -112,6 +113,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const [proofDialogUrl, setProofDialogUrl] = useState<string | null>(null);
 
   const { data: stats } = useQuery<{
     totalMembers: number;
@@ -160,6 +162,23 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
     },
     onError: (err: Error) => {
       toast({ title: "Failed to send reminder", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateMemberStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "active" | "suspended" }) => {
+      await adminFetch(`/api/admin/members/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "Member status updated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Failed to update status", description: err.message, variant: "destructive" });
     },
   });
 
@@ -281,17 +300,24 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
             <StokvelLogo className="h-6 w-6" />
-            <span className="font-bold" data-testid="text-admin-brand">Abangani Stokvel Fund - Admin</span>
+            <span className="font-bold hidden sm:inline" data-testid="text-admin-brand">Abangani Stokvel Fund - Admin</span>
+            <span className="font-bold sm:hidden" data-testid="text-admin-brand-mobile">Admin</span>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => { adminQueryClient.invalidateQueries(); }} data-testid="button-admin-refresh">
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" onClick={handlePdfExport} data-testid="button-admin-pdf-export">
+            <Button variant="ghost" size="icon" onClick={handlePdfExport} data-testid="button-admin-pdf-export" className="sm:hidden">
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" onClick={handlePdfExport} data-testid="button-admin-pdf-export-desktop" className="hidden sm:inline-flex">
               <FileText className="h-4 w-4 mr-2" />
               PDF
             </Button>
-            <Button variant="ghost" onClick={handleCsvExport} data-testid="button-admin-csv-export">
+            <Button variant="ghost" size="icon" onClick={handleCsvExport} data-testid="button-admin-csv-export" className="sm:hidden">
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" onClick={handleCsvExport} data-testid="button-admin-csv-export-desktop" className="hidden sm:inline-flex">
               <Download className="h-4 w-4 mr-2" />
               CSV
             </Button>
@@ -306,7 +332,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6 flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
           <Card className="p-4 text-center" data-testid="card-stat-total">
             <Users className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats?.totalMembers || 0}</p>
@@ -365,7 +391,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         </div>
 
         <Tabs defaultValue="members" data-testid="tabs-admin">
-          <TabsList className="flex-wrap h-auto gap-1">
+          <TabsList className="flex-wrap h-auto gap-1 w-full">
             <TabsTrigger value="members" data-testid="tab-admin-members">Members ({filteredMembers.length})</TabsTrigger>
             <TabsTrigger value="payments" data-testid="tab-admin-payments">Payments ({pendingPayments.length})</TabsTrigger>
             <TabsTrigger value="arrears" data-testid="tab-admin-arrears">Arrears ({arrearsMembers.length})</TabsTrigger>
@@ -386,6 +412,9 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                   onDelete={() => {
                     if (confirm("Are you sure you want to delete this member?")) deleteMemberMutation.mutate(m.id);
                   }}
+                  onApprove={() => updateMemberStatusMutation.mutate({ id: m.id, status: "active" })}
+                  onReject={() => updateMemberStatusMutation.mutate({ id: m.id, status: "suspended" })}
+                  isUpdatingStatus={updateMemberStatusMutation.isPending}
                 />
               ))
             )}
@@ -397,7 +426,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
             ) : (
               pendingPayments.map(({ payment: p, member: m }) => (
                 <Card key={p.id} className="p-4" data-testid={`card-payment-${p.id}`}>
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold" data-testid={`text-payment-member-${p.id}`}>{m.fullName} {m.surname}</p>
                       <p className="text-sm text-muted-foreground">
@@ -415,16 +444,15 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                         <p className="text-xs text-muted-foreground">Tracking: {m.trackingNumber}</p>
                       )}
                       {(p as any).proofOfPayment && (
-                        <a
-                          href={(p as any).proofOfPayment}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-                          data-testid={`link-proof-${p.id}`}
+                        <button
+                          type="button"
+                          onClick={() => setProofDialogUrl((p as any).proofOfPayment)}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1 cursor-pointer bg-transparent border-0 p-0"
+                          data-testid={`button-view-proof-${p.id}`}
                         >
                           <Eye className="h-3 w-3" />
                           View Proof of Payment
-                        </a>
+                        </button>
                       )}
                     </div>
                     <div className="flex gap-1">
@@ -461,7 +489,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                 const unpaidPayments = m.payments.filter((p) => p.status === "unpaid");
                 return (
                   <Card key={m.id} className="p-4" data-testid={`card-arrears-${m.id}`}>
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <p className="font-semibold" data-testid={`text-arrears-name-${m.id}`}>{m.fullName} {m.surname}</p>
                         <p className="text-sm text-muted-foreground">{m.phone}</p>
@@ -499,7 +527,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
             ) : (
               suppliers.map((s) => (
                 <Card key={s.id} className="p-4" data-testid={`card-supplier-${s.id}`}>
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{s.fullName} {s.surname}</p>
                       <p className="text-sm font-medium text-primary">{s.businessName}</p>
@@ -576,7 +604,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
             ) : (
               affiliatesData.map((a) => (
                 <Card key={a.id} className="p-4" data-testid={`card-affiliate-${a.id}`}>
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{a.fullName} {a.surname}</p>
                       <p className="text-sm text-muted-foreground">{a.phone} | {a.email}</p>
@@ -666,16 +694,57 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         </Tabs>
       </main>
 
+      <Dialog open={!!proofDialogUrl} onOpenChange={(open) => { if (!open) setProofDialogUrl(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh]" data-testid="dialog-proof-of-payment">
+          <DialogHeader>
+            <DialogTitle>Proof of Payment</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 overflow-auto">
+            {proofDialogUrl && (
+              proofDialogUrl.toLowerCase().endsWith(".pdf") ? (
+                <iframe
+                  src={proofDialogUrl}
+                  className="w-full h-[70vh] rounded-md border"
+                  title="Proof of Payment PDF"
+                  data-testid="iframe-proof-pdf"
+                />
+              ) : (
+                <img
+                  src={proofDialogUrl}
+                  alt="Proof of Payment"
+                  className="max-w-full max-h-[70vh] rounded-md object-contain"
+                  data-testid="img-proof-image"
+                />
+              )
+            )}
+            {proofDialogUrl && (
+              <a
+                href={proofDialogUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline"
+                data-testid="link-proof-new-tab"
+              >
+                Open in new tab
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
 }
 
-function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
+function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onReject, isUpdatingStatus }: {
   member: Member & { children: Child[]; payments: Payment[] };
   expanded: boolean;
   onToggleExpand: () => void;
   onDelete: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  isUpdatingStatus: boolean;
 }) {
   const plan = Object.values(PLANS).find((p) => p.name === member.plan);
   const paidCount = member.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
@@ -683,7 +752,7 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
 
   return (
     <Card className="p-4" data-testid={`card-member-${member.id}`}>
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-semibold" data-testid={`text-member-name-${member.id}`}>{member.fullName} {member.surname}</p>
           <p className="text-sm text-muted-foreground" data-testid={`text-member-phone-${member.id}`}>{member.phone}</p>
@@ -708,7 +777,31 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete }: {
             </p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-shrink-0 flex-wrap">
+          {member.status === "pending" && (
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onApprove}
+                disabled={isUpdatingStatus}
+                data-testid={`button-approve-member-${member.id}`}
+              >
+                <UserCheck className="h-4 w-4 mr-1" />
+                Approve
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onReject}
+                disabled={isUpdatingStatus}
+                data-testid={`button-reject-member-${member.id}`}
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                Reject
+              </Button>
+            </>
+          )}
           <Button size="icon" variant="ghost" onClick={onToggleExpand} data-testid={`button-view-member-${member.id}`}>
             <Eye className="h-4 w-4" />
           </Button>

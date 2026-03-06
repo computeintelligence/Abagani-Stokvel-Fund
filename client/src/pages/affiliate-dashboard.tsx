@@ -153,14 +153,14 @@ export default function AffiliateDashboard() {
                 <Link2 className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-bold">Your Affiliate Link</h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Input
                   readOnly
                   value={stats.affiliateLink}
-                  className="font-mono text-sm"
+                  className="font-mono text-xs sm:text-sm min-w-0 flex-1"
                   data-testid="input-affiliate-link"
                 />
-                <Button variant="outline" size="icon" onClick={copyLink} data-testid="button-copy-link">
+                <Button variant="outline" size="icon" onClick={copyLink} className="flex-shrink-0" data-testid="button-copy-link">
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
@@ -229,11 +229,11 @@ export default function AffiliateDashboard() {
                   <Users className="h-5 w-5 text-primary" />
                   <h3 className="text-lg font-bold">Referred Members ({stats.referredMembers.length})</h3>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {stats.referredMembers.map((member) => {
                     const conversion = stats.conversions.find(c => c.memberId === member.id);
                     return (
-                      <div key={member.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg" data-testid={`referred-member-${member.id}`}>
+                      <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/30 rounded-lg" data-testid={`referred-member-${member.id}`}>
                         <div className="flex items-center gap-2">
                           {conversion ? (
                             <CheckCircle className="h-4 w-4 text-green-500" />

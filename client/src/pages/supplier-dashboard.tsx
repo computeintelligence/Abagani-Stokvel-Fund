@@ -195,7 +195,7 @@ export default function SupplierDashboard() {
           </div>
           {editing ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>First Name</Label>
                   <Input value={fullName} onChange={(e) => setFullName(e.target.value)} data-testid="input-edit-supplier-name" />
@@ -255,7 +255,7 @@ export default function SupplierDashboard() {
                 <Label>Street Address</Label>
                 <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g. 45 Industrial Road" data-testid="input-edit-street" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>City / Town</Label>
                   <Input value={addressCity} onChange={(e) => setAddressCity(e.target.value)} placeholder="e.g. Johannesburg" data-testid="input-edit-city" />
@@ -265,7 +265,7 @@ export default function SupplierDashboard() {
                   <Input value={addressProvince} onChange={(e) => setAddressProvince(e.target.value)} placeholder="e.g. Gauteng" data-testid="input-edit-province" />
                 </div>
               </div>
-              <div className="w-1/2">
+              <div className="w-full sm:w-1/2">
                 <Label>Postal Code</Label>
                 <Input value={addressPostalCode} onChange={(e) => setAddressPostalCode(e.target.value)} placeholder="e.g. 2000" data-testid="input-edit-postal-code" />
               </div>
@@ -287,7 +287,7 @@ export default function SupplierDashboard() {
           </div>
           {editing ? (
             <div>
-              <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                 {GOODS_OPTIONS.map((good) => (
                   <div
                     key={good}

@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { signupSchema, registrationSchema, PLANS, MONTHS, getCashbackFees, supplierSignupSchema, supplierLoginSchema, affiliateSignupSchema, affiliateLoginSchema, AFFILIATE_COMMISSION_PER_CONVERSION, AFFILIATE_MAX_CONVERSIONS } from "@shared/schema";
 import type { Member, Supplier, Affiliate } from "@shared/schema";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail, sendSupplierRegistrationEmail, sendSupplierApprovalEmail, sendAffiliateRegistrationEmail, sendAffiliateApprovalEmail, sendContactFormEmail, sendWithdrawalInvoiceEmail } from "./email-service";
+import { sendWelcomeEmail, sendRegistrationEmail, sendPaymentSuccessEmail, sendPaymentReminderEmail, sendSupplierRegistrationEmail, sendSupplierApprovalEmail, sendAffiliateRegistrationEmail, sendAffiliateApprovalEmail, sendContactFormEmail, sendWithdrawalInvoiceEmail, sendPasswordResetEmail } from "./email-service";
 
 type PlanKey = keyof typeof PLANS;
 
@@ -60,6 +60,28 @@ function generateAffiliateTrackingNumber(): string {
 function hashPassword(password: string): string {
   const salt = "abangani-ns-2026";
   return crypto.createHash("sha256").update(salt + password).digest("hex");
+}
+
+const resetCodes = new Map<string, { code: string; expiresAt: number }>();
+
+function generateResetCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function storeResetCode(key: string, code: string) {
+  resetCodes.set(key, { code, expiresAt: Date.now() + 15 * 60 * 1000 });
+}
+
+function validateResetCode(key: string, code: string): boolean {
+  const entry = resetCodes.get(key);
+  if (!entry) return false;
+  if (Date.now() > entry.expiresAt) {
+    resetCodes.delete(key);
+    return false;
+  }
+  if (entry.code !== code) return false;
+  resetCodes.delete(key);
+  return true;
 }
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -302,6 +324,47 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { phone, email } = req.body;
+      if (!phone || !email) {
+        return res.status(400).json({ message: "Phone number and email are required" });
+      }
+      const member = await storage.getMemberByPhone(phone);
+      if (member && member.email.toLowerCase() === email.toLowerCase()) {
+        const code = generateResetCode();
+        storeResetCode(`member:${phone}`, code);
+        sendPasswordResetEmail(member.fullName, member.email, code).catch(console.error);
+      }
+      res.json({ message: "If an account exists with that phone and email, a reset code has been sent" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { phone, code, newPassword } = req.body;
+      if (!phone || !code || !newPassword) {
+        return res.status(400).json({ message: "Phone, code, and new password are required" });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      if (!validateResetCode(`member:${phone}`, code)) {
+        return res.status(400).json({ message: "Invalid or expired reset code" });
+      }
+      const member = await storage.getMemberByPhone(phone);
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      await storage.updateMember(member.id, { password: hashPassword(newPassword) });
+      res.json({ message: "Password reset successfully" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
   app.patch("/api/members/:id/profile", requireAuth, requireOwnMember, async (req, res) => {
     try {
       const { fullName, surname, phone, address } = req.body;
@@ -462,6 +525,19 @@ export async function registerRoutes(
       }));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/members/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status || !["active", "suspended"].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'active' or 'suspended'" });
+      }
+      await storage.updateMemberStatus(req.params.id, status);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
     }
   });
 
@@ -715,6 +791,47 @@ export async function registerRoutes(
     res.json({ message: "Logged out" });
   });
 
+  app.post("/api/supplier/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { phone, email } = req.body;
+      if (!phone || !email) {
+        return res.status(400).json({ message: "Phone number and email are required" });
+      }
+      const supplier = await storage.getSupplierByPhone(phone);
+      if (supplier && supplier.email.toLowerCase() === email.toLowerCase()) {
+        const code = generateResetCode();
+        storeResetCode(`supplier:${phone}`, code);
+        sendPasswordResetEmail(supplier.fullName, supplier.email, code).catch(console.error);
+      }
+      res.json({ message: "If an account exists with that phone and email, a reset code has been sent" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/supplier/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { phone, code, newPassword } = req.body;
+      if (!phone || !code || !newPassword) {
+        return res.status(400).json({ message: "Phone, code, and new password are required" });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      if (!validateResetCode(`supplier:${phone}`, code)) {
+        return res.status(400).json({ message: "Invalid or expired reset code" });
+      }
+      const supplier = await storage.getSupplierByPhone(phone);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      await storage.updateSupplier(supplier.id, { password: hashPassword(newPassword) });
+      res.json({ message: "Password reset successfully" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
   app.patch("/api/supplier/profile", async (req: Request, res: Response) => {
     const supplierId = (req.session as any)?.supplierId;
     if (!supplierId) return res.status(401).json({ message: "Not authenticated" });
@@ -790,6 +907,47 @@ export async function registerRoutes(
   app.post("/api/affiliate/logout", (req: Request, res: Response) => {
     delete (req.session as any).affiliateId;
     res.json({ message: "Logged out" });
+  });
+
+  app.post("/api/affiliate/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { phone, email } = req.body;
+      if (!phone || !email) {
+        return res.status(400).json({ message: "Phone number and email are required" });
+      }
+      const affiliate = await storage.getAffiliateByPhone(phone);
+      if (affiliate && affiliate.email.toLowerCase() === email.toLowerCase()) {
+        const code = generateResetCode();
+        storeResetCode(`affiliate:${phone}`, code);
+        sendPasswordResetEmail(affiliate.fullName, affiliate.email, code).catch(console.error);
+      }
+      res.json({ message: "If an account exists with that phone and email, a reset code has been sent" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/affiliate/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { phone, code, newPassword } = req.body;
+      if (!phone || !code || !newPassword) {
+        return res.status(400).json({ message: "Phone, code, and new password are required" });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      if (!validateResetCode(`affiliate:${phone}`, code)) {
+        return res.status(400).json({ message: "Invalid or expired reset code" });
+      }
+      const affiliate = await storage.getAffiliateByPhone(phone);
+      if (!affiliate) {
+        return res.status(404).json({ message: "Affiliate not found" });
+      }
+      await storage.updateAffiliate(affiliate.id, { password: hashPassword(newPassword) });
+      res.json({ message: "Password reset successfully" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   app.get("/api/affiliate/stats", async (req: Request, res: Response) => {

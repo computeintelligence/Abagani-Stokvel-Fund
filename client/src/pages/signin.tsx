@@ -8,8 +8,9 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, LogIn } from "lucide-react";
+import { Shield, LogIn, KeyRound, ArrowLeft, Mail, Phone } from "lucide-react";
 import { motion } from "framer-motion";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
@@ -18,6 +19,13 @@ export default function SignIn() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [forgotMode, setForgotMode] = useState<"hidden" | "request" | "reset">("hidden");
+  const [resetPhone, setResetPhone] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   if (authLoading) {
     return (
@@ -44,6 +52,40 @@ export default function SignIn() {
     }
   };
 
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/auth/forgot-password", { phone: resetPhone, email: resetEmail });
+      const data = await res.json();
+      toast({ title: "Code Sent", description: data.message });
+      setForgotMode("reset");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/auth/reset-password", { phone: resetPhone, code: resetCode, newPassword });
+      const data = await res.json();
+      toast({ title: "Success", description: data.message });
+      setForgotMode("hidden");
+      setResetPhone("");
+      setResetEmail("");
+      setResetCode("");
+      setNewPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -60,39 +102,125 @@ export default function SignIn() {
             <p className="text-muted-foreground mt-1">Sign in to your Abangani Stokvel Fund account</p>
           </div>
           <Card className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 0676083942"
-                  data-testid="input-signin-phone"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  data-testid="input-signin-password"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading || !phone || !password} data-testid="button-signin">
-                <LogIn className="h-4 w-4 mr-2" />
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-            <div className="text-center mt-4 text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link href="/signup" className="text-primary font-semibold" data-testid="link-signup">
-                Sign up here
-              </Link>
-            </div>
+            {forgotMode === "hidden" && (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="e.g. 0676083942"
+                      data-testid="input-signin-phone"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      data-testid="input-signin-password"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading || !phone || !password} data-testid="button-signin">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+                <div className="text-center mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setForgotMode("request")}
+                    className="text-sm text-primary font-semibold hover:underline"
+                    data-testid="link-forgot-password"
+                  >
+                    <KeyRound className="h-3 w-3 inline mr-1" />
+                    Forgot Password?
+                  </button>
+                </div>
+                <div className="text-center mt-4 text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Link href="/signup" className="text-primary font-semibold" data-testid="link-signup">
+                    Sign up here
+                  </Link>
+                </div>
+              </>
+            )}
+
+            {forgotMode === "request" && (
+              <form onSubmit={handleForgotRequest} className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <button type="button" onClick={() => setForgotMode("hidden")} data-testid="button-back-to-login">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <h2 className="text-lg font-semibold">Forgot Password</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">Enter your phone number and email to receive a reset code.</p>
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={resetPhone}
+                    onChange={(e) => setResetPhone(e.target.value)}
+                    placeholder="e.g. 0676083942"
+                    data-testid="input-forgot-phone"
+                  />
+                </div>
+                <div>
+                  <Label>Email Address</Label>
+                  <Input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    data-testid="input-forgot-email"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isForgotLoading || !resetPhone || !resetEmail} data-testid="button-send-reset-code">
+                  <Mail className="h-4 w-4 mr-2" />
+                  {isForgotLoading ? "Sending..." : "Send Reset Code"}
+                </Button>
+              </form>
+            )}
+
+            {forgotMode === "reset" && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <button type="button" onClick={() => setForgotMode("request")} data-testid="button-back-to-request">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <h2 className="text-lg font-semibold">Reset Password</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to your email and your new password.</p>
+                <div>
+                  <Label>Reset Code</Label>
+                  <Input
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    maxLength={6}
+                    data-testid="input-reset-code"
+                  />
+                </div>
+                <div>
+                  <Label>New Password</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 chars)"
+                    data-testid="input-new-password"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isForgotLoading || !resetCode || !newPassword} data-testid="button-reset-password">
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  {isForgotLoading ? "Resetting..." : "Reset Password"}
+                </Button>
+              </form>
+            )}
           </Card>
         </motion.div>
       </div>

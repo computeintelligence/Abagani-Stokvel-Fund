@@ -368,6 +368,19 @@ Account Number: ${accountNumber || 'Not provided'}
   await sendEmail(affiliateEmail, 'Withdrawal Invoice Submitted - Abangani Stokvel Fund', affiliateHtml);
 }
 
+export async function sendPasswordResetEmail(name: string, email: string, resetCode: string) {
+  if (!email) return;
+
+  const body = `<p>Dear ${name},</p>
+<p>We received a request to reset your password for your Abangani Stokvel Fund account.</p>
+<div class="highlight"><strong>Your Password Reset Code:</strong><br><span style="font-size:24px;letter-spacing:4px;font-weight:bold;">${resetCode}</span></div>
+<p>This code will expire in <strong>15 minutes</strong>. If you did not request a password reset, please ignore this email.</p>
+<p>Warm regards,<br>The Abangani Stokvel Fund Team</p>`;
+
+  const html = createHtmlEmail(body, 'Your password reset code');
+  await sendEmail(email, 'Password Reset Code - Abangani Stokvel Fund', html);
+}
+
 export async function sendContactFormEmail(fromName: string, fromEmail: string, subject: string, message: string) {
   const body = `<p><strong>New Contact Form Submission</strong></p>
 <div class="highlight">

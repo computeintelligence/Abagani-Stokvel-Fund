@@ -74,6 +74,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - **Affiliate registration**: Sent on affiliate signup with tracking number
 - **Supplier/Affiliate approval**: Sent when admin approves supplier or affiliate
 - **Withdrawal invoice**: Auto-generated when affiliate requests withdrawal at 200+ referrals, sent to admin + affiliate
+- **Password reset**: Sends 6-digit reset code via email (15-minute expiry, in-memory storage)
 - **Contact form**: Routes messages to abanganinsgroup@gmail.com (form on /contact page)
 - All emails use professional HTML templates with Abangani branding
 - All email links use custom domain: https://abanganistokvelfund.co.za
@@ -100,6 +101,8 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/auth/login` - Login
 - GET `/api/auth/me` - Current user
 - POST `/api/auth/logout` - Logout
+- POST `/api/auth/forgot-password` - Request password reset code (phone + email)
+- POST `/api/auth/reset-password` - Reset password with code
 
 ### Member Data
 - PATCH `/api/members/:id/profile` - Update profile (name, surname, phone, address)
@@ -112,6 +115,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 ### Admin
 - GET `/api/admin/stats` - Admin statistics
 - GET `/api/admin/members` - All members with details
+- PATCH `/api/admin/members/:id/status` - Approve/reject member (active/suspended)
 - DELETE `/api/admin/members/:id` - Delete member
 - POST `/api/admin/payments/:id/verify` - Verify payment (sends email)
 - POST `/api/admin/payments/:id/reject` - Reject payment
@@ -130,12 +134,16 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - GET `/api/supplier/me` - Current supplier
 - POST `/api/supplier/logout` - Supplier logout
 - PATCH `/api/supplier/profile` - Update supplier profile
+- POST `/api/supplier/forgot-password` - Request password reset code
+- POST `/api/supplier/reset-password` - Reset password with code
 
 ### Affiliate
 - POST `/api/affiliate/signup` - Create affiliate account
 - POST `/api/affiliate/login` - Affiliate login
 - GET `/api/affiliate/me` - Current affiliate
 - POST `/api/affiliate/logout` - Affiliate logout
+- POST `/api/affiliate/forgot-password` - Request password reset code
+- POST `/api/affiliate/reset-password` - Reset password with code
 - GET `/api/affiliate/stats` - Dashboard statistics (clicks, conversions, earnings, link)
 - GET `/api/affiliate/track/:code` - Record affiliate link click
 - POST `/api/affiliate/withdraw` - Request commission withdrawal (requires 200+ referrals)

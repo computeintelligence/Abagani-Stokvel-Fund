@@ -125,7 +125,10 @@ export default function Dashboard() {
             <span className="font-bold" data-testid="text-dashboard-brand">Abangani Stokvel Fund</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild data-testid="link-profile">
+            <Button variant="ghost" size="icon" asChild data-testid="link-profile" className="sm:hidden">
+              <Link href="/profile"><User className="h-4 w-4" /></Link>
+            </Button>
+            <Button variant="ghost" asChild data-testid="link-profile-desktop" className="hidden sm:inline-flex">
               <Link href="/profile"><User className="h-4 w-4 mr-2" /> Profile</Link>
             </Button>
             <Button size="icon" variant="ghost" onClick={logout} data-testid="button-logout">
@@ -137,7 +140,7 @@ export default function Dashboard() {
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-welcome">Welcome, {member.fullName}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-welcome">Welcome, {member.fullName}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <Badge variant="secondary" data-testid="badge-plan">{plan?.name || member.plan}</Badge>
             <Badge variant="outline" className="cursor-pointer" onClick={copyTracking} data-testid="badge-tracking">
@@ -280,14 +283,14 @@ function PaymentsTab({ payments, planAmount, memberId, trackingNumber }: {
           return (
             <Card
               key={`${payment.month}-${payment.year}`}
-              className="p-4 flex items-center justify-between gap-4"
+              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               data-testid={`card-payment-${payment.month}`}
             >
               <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="font-medium">{MONTHS[payment.month - 1]} {payment.year}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {payment.status === "paid" || payment.status === "verified" ? (
                   <Badge variant="default" className="bg-primary/10 text-primary" data-testid={`badge-paid-${payment.month}`}>
                     <CheckCircle className="h-3 w-3 mr-1" />
@@ -306,7 +309,7 @@ function PaymentsTab({ payments, planAmount, memberId, trackingNumber }: {
                         {isOverdue ? "Overdue - Pay Now" : "Due - Pay Now"}
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-lg sm:w-full">
                       <DialogHeader>
                         <DialogTitle>Pay for {MONTHS[payment.month - 1]} {payment.year}</DialogTitle>
                       </DialogHeader>

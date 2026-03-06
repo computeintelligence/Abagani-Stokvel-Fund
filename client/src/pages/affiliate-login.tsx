@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAffiliateAuth } from "@/lib/affiliate-auth";
 import { Navbar, StokvelLogo } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { Link2, LogIn } from "lucide-react";
+import { Link2, LogIn, KeyRound, ArrowLeft, Mail } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AffiliateLogin() {
   const [, navigate] = useLocation();
@@ -17,6 +18,13 @@ export default function AffiliateLogin() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [forgotMode, setForgotMode] = useState<"hidden" | "request" | "reset">("hidden");
+  const [resetPhone, setResetPhone] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   if (isLoading) {
     return (
@@ -43,6 +51,40 @@ export default function AffiliateLogin() {
     }
   };
 
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/affiliate/forgot-password", { phone: resetPhone, email: resetEmail });
+      const data = await res.json();
+      toast({ title: "Code Sent", description: data.message });
+      setForgotMode("reset");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/affiliate/reset-password", { phone: resetPhone, code: resetCode, newPassword });
+      const data = await res.json();
+      toast({ title: "Success", description: data.message });
+      setForgotMode("hidden");
+      setResetPhone("");
+      setResetEmail("");
+      setResetCode("");
+      setNewPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -54,33 +96,119 @@ export default function AffiliateLogin() {
         </div>
 
         <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Phone Number</Label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="0712345678"
-                required
-                data-testid="input-affiliate-login-phone"
-              />
-            </div>
-            <div>
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                required
-                data-testid="input-affiliate-login-password"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting} data-testid="button-affiliate-login">
-              <LogIn className="h-4 w-4 mr-2" />
-              {isSubmitting ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
+          {forgotMode === "hidden" && (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0712345678"
+                    required
+                    data-testid="input-affiliate-login-phone"
+                  />
+                </div>
+                <div>
+                  <Label>Password</Label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required
+                    data-testid="input-affiliate-login-password"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting} data-testid="button-affiliate-login">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  {isSubmitting ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => setForgotMode("request")}
+                  className="text-sm text-primary font-semibold hover:underline"
+                  data-testid="link-affiliate-forgot-password"
+                >
+                  <KeyRound className="h-3 w-3 inline mr-1" />
+                  Forgot Password?
+                </button>
+              </div>
+            </>
+          )}
+
+          {forgotMode === "request" && (
+            <form onSubmit={handleForgotRequest} className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button" onClick={() => setForgotMode("hidden")} data-testid="button-affiliate-back-to-login">
+                  <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <h2 className="text-lg font-semibold">Forgot Password</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">Enter your phone number and email to receive a reset code.</p>
+              <div>
+                <Label>Phone Number</Label>
+                <Input
+                  value={resetPhone}
+                  onChange={(e) => setResetPhone(e.target.value)}
+                  placeholder="0712345678"
+                  data-testid="input-affiliate-forgot-phone"
+                />
+              </div>
+              <div>
+                <Label>Email Address</Label>
+                <Input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  data-testid="input-affiliate-forgot-email"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isForgotLoading || !resetPhone || !resetEmail} data-testid="button-affiliate-send-reset-code">
+                <Mail className="h-4 w-4 mr-2" />
+                {isForgotLoading ? "Sending..." : "Send Reset Code"}
+              </Button>
+            </form>
+          )}
+
+          {forgotMode === "reset" && (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button" onClick={() => setForgotMode("request")} data-testid="button-affiliate-back-to-request">
+                  <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <h2 className="text-lg font-semibold">Reset Password</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to your email and your new password.</p>
+              <div>
+                <Label>Reset Code</Label>
+                <Input
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  data-testid="input-affiliate-reset-code"
+                />
+              </div>
+              <div>
+                <Label>New Password</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 chars)"
+                  data-testid="input-affiliate-new-password"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isForgotLoading || !resetCode || !newPassword} data-testid="button-affiliate-reset-password">
+                <KeyRound className="h-4 w-4 mr-2" />
+                {isForgotLoading ? "Resetting..." : "Reset Password"}
+              </Button>
+            </form>
+          )}
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
