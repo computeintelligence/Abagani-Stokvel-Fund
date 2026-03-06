@@ -17,7 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { MONTHS, PLANS, GRADES } from "@shared/schema";
 import type { Child, Payment } from "@shared/schema";
 import {
-  Shield, Bell, User, Copy, Calendar, CreditCard,
+  Shield, Bell, User, Copy, Calendar,
   Download, CheckCircle, AlertCircle, Clock, Plus, Trash2, Edit2, Save, X,
   FileText, FileSpreadsheet, ArrowRight, LogOut
 } from "lucide-react";
@@ -107,9 +107,9 @@ export default function Dashboard() {
   const totalExpected = (paymentsData?.length || 0) * (member.planAmount || 0);
   const progressPercent = totalExpected > 0 ? (totalPaid / totalExpected) * 100 : 0;
 
-  const paymentStartDate = new Date(2026, 2, 1);
   const now = new Date();
-  const canPay = now >= paymentStartDate;
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
 
   const copyTracking = () => {
     navigator.clipboard.writeText(member.trackingNumber);
@@ -184,7 +184,6 @@ export default function Dashboard() {
             <PaymentsTab
               payments={paymentsData || []}
               planAmount={member.planAmount || 0}
-              canPay={canPay}
               memberId={member.id}
               trackingNumber={member.trackingNumber}
             />
@@ -203,10 +202,9 @@ export default function Dashboard() {
   );
 }
 
-function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }: {
+function PaymentsTab({ payments, planAmount, memberId, trackingNumber }: {
   payments: Payment[];
   planAmount: number;
-  canPay: boolean;
   memberId: string;
   trackingNumber: string;
 }) {
@@ -215,6 +213,9 @@ function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }:
   const [reference, setReference] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
 
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
   const boxerSurcharge = 20;
   const getPaymentAmount = (method: string) => {
     return method === "boxer" ? planAmount + boxerSurcharge : planAmount;
@@ -268,163 +269,154 @@ function PaymentsTab({ payments, planAmount, canPay, memberId, trackingNumber }:
     <div>
       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <h3 className="text-lg font-bold">Monthly Payments</h3>
-        {canPay && (
-          <Badge variant="default" data-testid="badge-pay-active">
-            <CreditCard className="h-3 w-3 mr-1" />
-            Pay
-          </Badge>
-        )}
       </div>
 
-      {!canPay && (
-        <Card className="p-4 mb-4 border-primary/20 bg-primary/5" data-testid="card-payment-info">
-          <p className="text-sm">
-            Payments will be available from <strong>1 March 2026</strong>. You can register now
-            and start paying from that date.
-          </p>
-        </Card>
-      )}
-
       <div className="space-y-2">
-        {sorted.map((payment) => (
-          <Card
-            key={`${payment.month}-${payment.year}`}
-            className="p-4 flex items-center justify-between gap-4"
-            data-testid={`card-payment-${payment.month}`}
-          >
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{MONTHS[payment.month - 1]} {payment.year}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {payment.status === "paid" || payment.status === "verified" ? (
-                <Badge variant="default" className="bg-primary/10 text-primary" data-testid={`badge-paid-${payment.month}`}>
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Paid
-                </Badge>
-              ) : payment.status === "pending" ? (
-                <Badge variant="secondary" data-testid={`badge-pending-${payment.month}`}>
-                  <Clock className="h-3 w-3 mr-1" />
-                  Pending
-                </Badge>
-              ) : canPay ? (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Badge variant="destructive" className="cursor-pointer" data-testid={`badge-unpaid-${payment.month}`}>
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Unpaid - Pay Now
-                    </Badge>
-                  </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Pay for {MONTHS[payment.month - 1]} {payment.year}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v)}>
-                          <SelectTrigger data-testid="select-payment-method">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="eft">EFT (Bank Transfer)</SelectItem>
-                            <SelectItem value="bank">Bank (In-Branch Payment)</SelectItem>
-                            <SelectItem value="boxer">Boxer (+R{boxerSurcharge} surcharge)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+        {sorted.map((payment) => {
+          const isDueOrOverdue = payment.year < currentYear || (payment.year === currentYear && payment.month <= currentMonth);
+          const isOverdue = isDueOrOverdue && payment.month < currentMonth;
+          const canPayThis = isDueOrOverdue && payment.status === "unpaid";
 
-                      <div className="rounded-lg border p-3 bg-primary/5">
-                        <p className="text-sm font-semibold mb-1">Amount Due</p>
-                        <p className="text-2xl font-bold text-primary" data-testid="text-payment-amount">
-                          R{getPaymentAmount(paymentMethod)}
-                        </p>
-                        {paymentMethod === "boxer" && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Includes R{boxerSurcharge} Boxer surcharge (R{planAmount} + R{boxerSurcharge})
-                          </p>
-                        )}
-                      </div>
-
-                      {(paymentMethod === "eft" || paymentMethod === "bank") && bankDetails}
-
-                      {paymentMethod === "eft" && (
-                        <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
-                          <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay via EFT</p>
-                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
-                            <li>Transfer R{planAmount} to the account above</li>
-                            <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
-                            <li>Upload your proof of payment below</li>
-                          </ol>
-                        </Card>
-                      )}
-
-                      {paymentMethod === "bank" && (
-                        <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
-                          <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay at your bank</p>
-                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
-                            <li>Visit any branch and pay R{planAmount} into the account above</li>
-                            <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
-                            <li>Upload your proof of payment below</li>
-                          </ol>
-                        </Card>
-                      )}
-
-                      {paymentMethod === "boxer" && (
-                        <Card className="p-3 bg-orange-500/5 border-orange-500/20 text-xs">
-                          <p className="font-semibold text-sm text-orange-700 dark:text-orange-400">How to pay at Boxer</p>
-                          <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
-                            <li>Visit any Boxer store and pay R{getPaymentAmount("boxer")}</li>
-                            <li>Mention your tracking number <strong>{trackingNumber}</strong></li>
-                            <li>Keep your receipt and upload the proof of payment below</li>
-                          </ol>
-                        </Card>
-                      )}
-
-                      <div>
-                        <Label>Reference / Receipt Number</Label>
-                        <Input
-                          value={reference}
-                          onChange={(e) => setReference(e.target.value)}
-                          placeholder="Enter your payment reference or receipt number"
-                          data-testid="input-reference"
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Proof of Payment (Image or PDF)</Label>
-                        <Input
-                          type="file"
-                          accept=".jpg,.jpeg,.png,.pdf,.webp"
-                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                          data-testid="input-proof-of-payment"
-                          className="mt-1"
-                        />
-                        {proofFile && (
-                          <p className="text-xs text-muted-foreground mt-1">Selected: {proofFile.name}</p>
-                        )}
-                      </div>
-
-                      <Button
-                        className="w-full"
-                        onClick={() => payMutation.mutate({ month: payment.month, year: payment.year })}
-                        disabled={!reference || !proofFile || payMutation.isPending}
-                        data-testid="button-submit-payment"
-                      >
-                        {payMutation.isPending ? "Submitting..." : `Submit Payment - R${getPaymentAmount(paymentMethod)}`}
+          return (
+            <Card
+              key={`${payment.month}-${payment.year}`}
+              className="p-4 flex items-center justify-between gap-4"
+              data-testid={`card-payment-${payment.month}`}
+            >
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{MONTHS[payment.month - 1]} {payment.year}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {payment.status === "paid" || payment.status === "verified" ? (
+                  <Badge variant="default" className="bg-primary/10 text-primary" data-testid={`badge-paid-${payment.month}`}>
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Paid
+                  </Badge>
+                ) : payment.status === "pending" ? (
+                  <Badge variant="secondary" data-testid={`badge-pending-${payment.month}`}>
+                    <Clock className="h-3 w-3 mr-1" />
+                    Pending
+                  </Badge>
+                ) : canPayThis ? (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" size="sm" data-testid={`button-pay-${payment.month}`}>
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {isOverdue ? "Overdue - Pay Now" : "Due - Pay Now"}
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              ) : (
-                <Badge variant="destructive" data-testid={`badge-unpaid-${payment.month}`}>
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Unpaid
-                </Badge>
-              )}
-            </div>
-          </Card>
-        ))}
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Pay for {MONTHS[payment.month - 1]} {payment.year}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Payment Method</Label>
+                          <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v)}>
+                            <SelectTrigger data-testid="select-payment-method">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="eft">EFT (Bank Transfer)</SelectItem>
+                              <SelectItem value="bank">Bank (In-Branch Payment)</SelectItem>
+                              <SelectItem value="boxer">Boxer (+R{boxerSurcharge} surcharge)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="rounded-lg border p-3 bg-primary/5">
+                          <p className="text-sm font-semibold mb-1">Amount Due</p>
+                          <p className="text-2xl font-bold text-primary" data-testid="text-payment-amount">
+                            R{getPaymentAmount(paymentMethod)}
+                          </p>
+                          {paymentMethod === "boxer" && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Includes R{boxerSurcharge} Boxer surcharge (R{planAmount} + R{boxerSurcharge})
+                            </p>
+                          )}
+                        </div>
+
+                        {(paymentMethod === "eft" || paymentMethod === "bank") && bankDetails}
+
+                        {paymentMethod === "eft" && (
+                          <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
+                            <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay via EFT</p>
+                            <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                              <li>Transfer R{planAmount} to the account above</li>
+                              <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
+                              <li>Upload your proof of payment below</li>
+                            </ol>
+                          </Card>
+                        )}
+
+                        {paymentMethod === "bank" && (
+                          <Card className="p-3 bg-blue-500/5 border-blue-500/20 text-xs">
+                            <p className="font-semibold text-sm text-blue-700 dark:text-blue-400">How to pay at your bank</p>
+                            <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                              <li>Visit any branch and pay R{planAmount} into the account above</li>
+                              <li>Use your tracking number <strong>{trackingNumber}</strong> as reference</li>
+                              <li>Upload your proof of payment below</li>
+                            </ol>
+                          </Card>
+                        )}
+
+                        {paymentMethod === "boxer" && (
+                          <Card className="p-3 bg-orange-500/5 border-orange-500/20 text-xs">
+                            <p className="font-semibold text-sm text-orange-700 dark:text-orange-400">How to pay at Boxer</p>
+                            <ol className="list-decimal ml-4 mt-1 space-y-1 text-muted-foreground">
+                              <li>Visit any Boxer store and pay R{getPaymentAmount("boxer")}</li>
+                              <li>Mention your tracking number <strong>{trackingNumber}</strong></li>
+                              <li>Keep your receipt and upload the proof of payment below</li>
+                            </ol>
+                          </Card>
+                        )}
+
+                        <div>
+                          <Label>Reference / Receipt Number</Label>
+                          <Input
+                            value={reference}
+                            onChange={(e) => setReference(e.target.value)}
+                            placeholder="Enter your payment reference or receipt number"
+                            data-testid="input-reference"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Proof of Payment (Image or PDF)</Label>
+                          <Input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.pdf,.webp"
+                            onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                            data-testid="input-proof-of-payment"
+                            className="mt-1"
+                          />
+                          {proofFile && (
+                            <p className="text-xs text-muted-foreground mt-1">Selected: {proofFile.name}</p>
+                          )}
+                        </div>
+
+                        <Button
+                          className="w-full"
+                          onClick={() => payMutation.mutate({ month: payment.month, year: payment.year })}
+                          disabled={!reference || !proofFile || payMutation.isPending}
+                          data-testid="button-submit-payment"
+                        >
+                          {payMutation.isPending ? "Submitting..." : `Submit Payment - R${getPaymentAmount(paymentMethod)}`}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground" data-testid={`badge-upcoming-${payment.month}`}>
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Upcoming
+                  </Badge>
+                )}
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
