@@ -68,6 +68,10 @@ export default function SupplierSignup() {
   const [goodsSupplied, setGoodsSupplied] = useState<string[]>([]);
   const [customGood, setCustomGood] = useState("");
 
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
+
   const [agreed, setAgreed] = useState(false);
 
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -114,6 +118,9 @@ export default function SupplierSignup() {
         registrationNumber: registrationNumber || undefined,
         address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
         goodsSupplied,
+        nextOfKinName: nextOfKinName || undefined,
+        nextOfKinPhone: nextOfKinPhone || undefined,
+        nextOfKinRelationship: nextOfKinRelationship || undefined,
         agreedToTerms: agreed,
       });
       const data = await res.json();
@@ -189,6 +196,32 @@ export default function SupplierSignup() {
                 {confirmPassword && password !== confirmPassword && (
                   <p className="text-xs text-destructive mt-1">Passwords do not match</p>
                 )}
+              </div>
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-semibold mb-3">Next of Kin (Optional)</p>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Full Name</Label>
+                    <Input value={nextOfKinName} onChange={(e) => setNextOfKinName(e.target.value)} placeholder="Next of kin full name" data-testid="input-supplier-nok-name" />
+                  </div>
+                  <div>
+                    <Label>Phone Number</Label>
+                    <Input value={nextOfKinPhone} onChange={(e) => setNextOfKinPhone(e.target.value)} placeholder="Next of kin phone number" data-testid="input-supplier-nok-phone" />
+                  </div>
+                  <div>
+                    <Label>Relationship</Label>
+                    <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                      <SelectTrigger data-testid="select-supplier-nok-relationship">
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Parent", "Spouse", "Sibling", "Child", "Other"].map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Redirect, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAffiliateAuth } from "@/lib/affiliate-auth";
@@ -11,7 +14,8 @@ import { StokvelLogo } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import {
   Link2, Copy, LogOut, TrendingUp, Users, DollarSign,
-  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote, RefreshCw
+  MousePointer, CheckCircle, Clock, AlertTriangle, ExternalLink, Banknote, RefreshCw,
+  Edit, Save, X, User
 } from "lucide-react";
 
 interface ReferredMember {
@@ -36,9 +40,24 @@ interface AffiliateStats {
 }
 
 export default function AffiliateDashboard() {
-  const { affiliate, isLoading, logout } = useAffiliateAuth();
+  const { affiliate, isLoading, logout, refresh } = useAffiliateAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressProvince, setAddressProvince] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery<AffiliateStats>({
     queryKey: ["/api/affiliate/stats"],
@@ -60,6 +79,50 @@ export default function AffiliateDashboard() {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const startEdit = () => {
+    if (!affiliate) return;
+    setFullName(affiliate.fullName);
+    setSurname(affiliate.surname || "");
+    setPhone(affiliate.phone);
+    setEmail(affiliate.email);
+    const addrParts = (affiliate.address || "").split(", ");
+    setStreetAddress(addrParts[0] || "");
+    setAddressCity(addrParts[1] || "");
+    setAddressProvince(addrParts[2] || "");
+    setAddressPostalCode(addrParts[3] || "");
+    setBankName(affiliate.bankName || "");
+    setAccountNumber(affiliate.accountNumber || "");
+    setNextOfKinName(affiliate.nextOfKinName || "");
+    setNextOfKinPhone(affiliate.nextOfKinPhone || "");
+    setNextOfKinRelationship(affiliate.nextOfKinRelationship || "");
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest("PATCH", "/api/affiliate/profile", {
+        fullName,
+        surname,
+        phone,
+        email,
+        address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
+        bankName: bankName || null,
+        accountNumber: accountNumber || null,
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
+      });
+      await refresh();
+      setEditing(false);
+      toast({ title: "Profile updated" });
+    } catch (err: any) {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const copyLink = () => {
@@ -137,14 +200,126 @@ export default function AffiliateDashboard() {
           </Card>
         )}
 
-        <div>
-          <h2 className="text-2xl font-bold" data-testid="text-affiliate-welcome">
-            Welcome, {affiliate.fullName}!
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tracking Number: <strong>{affiliate.trackingNumber}</strong>
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold" data-testid="text-affiliate-welcome">
+              Welcome, {affiliate.fullName}!
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Tracking Number: <strong>{affiliate.trackingNumber}</strong>
+            </p>
+          </div>
+          {!editing && (
+            <Button variant="outline" onClick={startEdit} data-testid="button-affiliate-edit">
+              <Edit className="h-4 w-4 mr-2" /> Edit Profile
+            </Button>
+          )}
         </div>
+
+        {editing && (
+          <div className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">Personal Details</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>First Name</Label>
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} data-testid="input-edit-affiliate-name" />
+                  </div>
+                  <div>
+                    <Label>Surname</Label>
+                    <Input value={surname} onChange={(e) => setSurname(e.target.value)} data-testid="input-edit-affiliate-surname" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-edit-affiliate-email" />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} data-testid="input-edit-affiliate-phone" />
+                </div>
+                <div>
+                  <Label>Street Address</Label>
+                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g. 123 Main Street" data-testid="input-edit-affiliate-street" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>City / Town</Label>
+                    <Input value={addressCity} onChange={(e) => setAddressCity(e.target.value)} placeholder="e.g. Johannesburg" data-testid="input-edit-affiliate-city" />
+                  </div>
+                  <div>
+                    <Label>Province</Label>
+                    <Input value={addressProvince} onChange={(e) => setAddressProvince(e.target.value)} placeholder="e.g. Gauteng" data-testid="input-edit-affiliate-province" />
+                  </div>
+                </div>
+                <div className="w-full sm:w-1/2">
+                  <Label>Postal Code</Label>
+                  <Input value={addressPostalCode} onChange={(e) => setAddressPostalCode(e.target.value)} placeholder="e.g. 2000" data-testid="input-edit-affiliate-postal-code" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Banknote className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">Banking Details</h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. FNB" data-testid="input-edit-affiliate-bank" />
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Account number" data-testid="input-edit-affiliate-account" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">Next of Kin</h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label>Full Name</Label>
+                  <Input value={nextOfKinName} onChange={(e) => setNextOfKinName(e.target.value)} placeholder="Next of kin full name" data-testid="input-edit-affiliate-nok-name" />
+                </div>
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input value={nextOfKinPhone} onChange={(e) => setNextOfKinPhone(e.target.value)} placeholder="Next of kin phone number" data-testid="input-edit-affiliate-nok-phone" />
+                </div>
+                <div>
+                  <Label>Relationship</Label>
+                  <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                    <SelectTrigger data-testid="select-edit-affiliate-nok-relationship">
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Parent", "Spouse", "Sibling", "Child", "Other"].map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
+
+            <div className="flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setEditing(false)} data-testid="button-affiliate-cancel-edit">
+                <X className="h-4 w-4 mr-2" /> Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving} data-testid="button-affiliate-save">
+                <Save className="h-4 w-4 mr-2" /> {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {stats && (
           <>

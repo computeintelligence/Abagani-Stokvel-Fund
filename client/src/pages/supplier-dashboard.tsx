@@ -47,6 +47,9 @@ export default function SupplierDashboard() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [customGood, setCustomGood] = useState("");
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
 
   if (isLoading) {
     return (
@@ -74,6 +77,9 @@ export default function SupplierDashboard() {
     setSurname(supplier.surname);
     setPhone(supplier.phone);
     setEmail(supplier.email);
+    setNextOfKinName(supplier.nextOfKinName || "");
+    setNextOfKinPhone(supplier.nextOfKinPhone || "");
+    setNextOfKinRelationship(supplier.nextOfKinRelationship || "");
     setEditing(true);
   };
 
@@ -105,6 +111,9 @@ export default function SupplierDashboard() {
         surname,
         phone,
         email,
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
       });
       await refresh();
       setEditing(false);
@@ -219,6 +228,44 @@ export default function SupplierDashboard() {
               <p><strong>Name:</strong> {supplier.fullName} {supplier.surname}</p>
               <p><strong>Email:</strong> {supplier.email}</p>
               <p><strong>Phone:</strong> {supplier.phone}</p>
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Next of Kin</h3>
+          </div>
+          {editing ? (
+            <div className="space-y-4">
+              <div>
+                <Label>Full Name</Label>
+                <Input value={nextOfKinName} onChange={(e) => setNextOfKinName(e.target.value)} placeholder="Next of kin full name" data-testid="input-edit-supplier-nok-name" />
+              </div>
+              <div>
+                <Label>Phone Number</Label>
+                <Input value={nextOfKinPhone} onChange={(e) => setNextOfKinPhone(e.target.value)} placeholder="Next of kin phone number" data-testid="input-edit-supplier-nok-phone" />
+              </div>
+              <div>
+                <Label>Relationship</Label>
+                <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                  <SelectTrigger data-testid="select-edit-supplier-nok-relationship">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Parent", "Spouse", "Sibling", "Child", "Other"].map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <p><strong>Name:</strong> {supplier.nextOfKinName || "-"}</p>
+              <p><strong>Phone:</strong> {supplier.nextOfKinPhone || "-"}</p>
+              <p><strong>Relationship:</strong> {supplier.nextOfKinRelationship || "-"}</p>
             </div>
           )}
         </Card>

@@ -12,7 +12,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - **Color Scheme**: Dark forest green (152 56% 28% light, 152 50% 34% dark)
 
 ## Key Pages
-- `/` - Landing page with hero, pricing (3 plans with per-child pricing), how it works, CTA
+- `/` - Landing page with hero (shows active member count), pricing (3 plans with per-child pricing), how it works, CTA
 - `/about` - About page explaining what a stokvel is, how it works, community benefits
 - `/contact` - Contact page with phone, email, location, business hours, payment methods
 - `/signup` - Account creation (Name, Surname, Email, Phone, Password) → redirects to /welcome
@@ -20,14 +20,14 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - `/welcome` - Post-signup welcome screen encouraging plan registration
 - `/register` - Plan selection wizard (authenticated, no-plan users only) - 5 steps: Plan → Children → Address → Summary → Agreement
 - `/dashboard` - User dashboard with payment progress, monthly payments, children management, export
-- `/profile` - View and edit member profile (name, surname, phone, address)
-- `/admin` - Admin panel (access code: ABANGANI26) with member/supplier/affiliate management, payment approvals, arrears reminders
+- `/profile` - View and edit member profile (name, surname, phone, address, next of kin)
+- `/admin` - Admin panel (access code: ABANGANI26) with member/supplier/affiliate management, payment approvals, arrears reminders, edit/add users
 - `/supplier/signup` - Supplier registration wizard (4 steps: Personal → Business → Products → Agreement)
 - `/supplier/login` - Supplier login page
-- `/supplier/dashboard` - Supplier dashboard with profile view/edit, status tracking
+- `/supplier/dashboard` - Supplier dashboard with profile view/edit (including next of kin), status tracking
 - `/affiliate/signup` - Affiliate registration wizard (3 steps: Personal → Banking → Agreement)
 - `/affiliate/login` - Affiliate login page
-- `/affiliate/dashboard` - Affiliate dashboard with link, stats (clicks, conversions, earnings), progress bar
+- `/affiliate/dashboard` - Affiliate dashboard with link, stats (clicks, conversions, earnings), progress bar, profile edit (including next of kin)
 
 ## Two-Phase Registration Flow
 1. **Signup** (`/signup`): User creates account with Name, Surname, Email, Phone, Password → auto-login → redirect to Welcome page
@@ -40,11 +40,11 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - Cashback: From R500/month (12% admin fee, flexible amount via getCashbackFees())
 
 ## Database Tables
-- `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration), referredByAffiliate
+- `members` - Parent/guardian accounts with plan info, email, surname, tracking numbers (plan fields nullable for two-phase registration), referredByAffiliate, next of kin details
 - `children` - Children linked to members with school/grade/gender info
 - `payments` - Monthly payment records (12 per member per year) with proofOfPayment file path
-- `suppliers` - Supplier business accounts with goods supplied, status (default: approved)
-- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats (no ID number field, default status: approved)
+- `suppliers` - Supplier business accounts with goods supplied, status (default: approved), next of kin details
+- `affiliates` - Affiliate accounts with tracking number, affiliate code, banking details, click/conversion stats (no ID number field, default status: approved), next of kin details
 - `affiliate_clicks` - Records of clicks on affiliate links
 - `affiliate_conversions` - Conversion records when referred members make first payment
 
@@ -105,7 +105,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/auth/reset-password` - Reset password with code
 
 ### Member Data
-- PATCH `/api/members/:id/profile` - Update profile (name, surname, phone, address)
+- PATCH `/api/members/:id/profile` - Update profile (name, surname, phone, address, next of kin)
 - GET/POST `/api/members/:id/children` - Children CRUD (ownership enforced)
 - PATCH/DELETE `/api/children/:id` - Child update/delete (ownership enforced)
 - GET `/api/members/:id/payments` - Payment records
@@ -115,17 +115,23 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 ### Admin
 - GET `/api/admin/stats` - Admin statistics
 - GET `/api/admin/members` - All members with details
+- POST `/api/admin/members` - Admin create member manually
 - PATCH `/api/admin/members/:id/status` - Approve/reject member (active/suspended)
+- PATCH `/api/admin/members/:id/edit` - Admin edit member details
 - DELETE `/api/admin/members/:id` - Delete member
 - POST `/api/admin/payments/:id/verify` - Verify payment (sends email)
 - POST `/api/admin/payments/:id/reject` - Reject payment
 - POST `/api/admin/members/:id/send-reminder` - Send payment reminder email
 - GET `/api/admin/export` - Export members data (CSV/PDF)
 - GET `/api/admin/suppliers` - All suppliers
+- POST `/api/admin/suppliers` - Admin create supplier manually
 - PATCH `/api/admin/suppliers/:id/status` - Approve/reject supplier
+- PATCH `/api/admin/suppliers/:id/edit` - Admin edit supplier details
 - DELETE `/api/admin/suppliers/:id` - Delete supplier
 - GET `/api/admin/affiliates` - All affiliates
+- POST `/api/admin/affiliates` - Admin create affiliate manually
 - PATCH `/api/admin/affiliates/:id/status` - Approve/reject affiliate
+- PATCH `/api/admin/affiliates/:id/edit` - Admin edit affiliate details
 - DELETE `/api/admin/affiliates/:id` - Delete affiliate
 
 ### Supplier
@@ -133,7 +139,7 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/supplier/login` - Supplier login
 - GET `/api/supplier/me` - Current supplier
 - POST `/api/supplier/logout` - Supplier logout
-- PATCH `/api/supplier/profile` - Update supplier profile
+- PATCH `/api/supplier/profile` - Update supplier profile (personal, business, next of kin)
 - POST `/api/supplier/forgot-password` - Request password reset code
 - POST `/api/supplier/reset-password` - Reset password with code
 
@@ -142,11 +148,15 @@ A SaaS stokvel subscription platform where parents pay monthly contributions tow
 - POST `/api/affiliate/login` - Affiliate login
 - GET `/api/affiliate/me` - Current affiliate
 - POST `/api/affiliate/logout` - Affiliate logout
+- PATCH `/api/affiliate/profile` - Update affiliate profile (personal, banking, next of kin)
 - POST `/api/affiliate/forgot-password` - Request password reset code
 - POST `/api/affiliate/reset-password` - Reset password with code
 - GET `/api/affiliate/stats` - Dashboard statistics (clicks, conversions, earnings, link)
 - GET `/api/affiliate/track/:code` - Record affiliate link click
 - POST `/api/affiliate/withdraw` - Request commission withdrawal (requires 200+ referrals)
+
+### Public
+- GET `/api/public/stats` - Public stats (active member count, no auth required)
 
 ### Contact
 - POST `/api/contact` - Send contact form message to abanganinsgroup@gmail.com

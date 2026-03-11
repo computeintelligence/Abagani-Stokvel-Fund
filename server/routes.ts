@@ -198,6 +198,9 @@ export async function registerRoutes(
         joinYear: null,
         address: null,
         referredByAffiliate: affiliateRef,
+        nextOfKinName: data.nextOfKinName || null,
+        nextOfKinPhone: data.nextOfKinPhone || null,
+        nextOfKinRelationship: data.nextOfKinRelationship || null,
         password: hashPassword(data.password),
       });
 
@@ -367,12 +370,15 @@ export async function registerRoutes(
 
   app.patch("/api/members/:id/profile", requireAuth, requireOwnMember, async (req, res) => {
     try {
-      const { fullName, surname, phone, address } = req.body;
+      const { fullName, surname, phone, address, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
       const updateData: any = {};
       if (fullName) updateData.fullName = fullName;
       if (surname) updateData.surname = surname;
       if (phone) updateData.phone = phone;
       if (address !== undefined) updateData.address = address;
+      if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
+      if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
+      if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
       const updated = await storage.updateMember(req.params.id, updateData);
       res.json(stripPassword(updated));
     } catch (err: any) {
@@ -502,6 +508,15 @@ export async function registerRoutes(
         res.setHeader("Content-Disposition", `attachment; filename="${member.trackingNumber}-payments.html"`);
         res.send(html);
       }
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/public/stats", async (_req, res) => {
+    try {
+      const stats = await storage.getStats();
+      res.json({ activeMembers: stats.active });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -836,12 +851,29 @@ export async function registerRoutes(
     const supplierId = (req.session as any)?.supplierId;
     if (!supplierId) return res.status(401).json({ message: "Not authenticated" });
     try {
-      const allowed = ["businessName", "businessType", "registrationNumber", "address", "goodsSupplied", "fullName", "surname", "phone", "email"];
+      const allowed = ["businessName", "businessType", "registrationNumber", "address", "goodsSupplied", "fullName", "surname", "phone", "email", "nextOfKinName", "nextOfKinPhone", "nextOfKinRelationship"];
       const updates: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
       }
       const updated = await storage.updateSupplier(supplierId, updates);
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/affiliate/profile", async (req: Request, res: Response) => {
+    const affiliateId = (req.session as any)?.affiliateId;
+    if (!affiliateId) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const allowed = ["fullName", "surname", "phone", "email", "address", "bankName", "accountNumber", "nextOfKinName", "nextOfKinPhone", "nextOfKinRelationship"];
+      const updates: any = {};
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) updates[key] = req.body[key];
+      }
+      const updated = await storage.updateAffiliate(affiliateId, updates);
       const { password, ...safe } = updated;
       res.json(safe);
     } catch (err: any) {
@@ -1132,6 +1164,183 @@ export async function registerRoutes(
       res.json({ message: "Affiliate deleted" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/members/:id/edit", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, address, plan, planAmount, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      const updateData: any = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (surname !== undefined) updateData.surname = surname;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (address !== undefined) updateData.address = address;
+      if (plan !== undefined) updateData.plan = plan;
+      if (planAmount !== undefined) updateData.planAmount = planAmount;
+      if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
+      if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
+      if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
+      const updated = await storage.updateMember(req.params.id, updateData);
+      res.json(stripPassword(updated));
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/suppliers/:id/edit", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, businessName, businessType, registrationNumber, address, goodsSupplied, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      const updateData: any = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (surname !== undefined) updateData.surname = surname;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (businessName !== undefined) updateData.businessName = businessName;
+      if (businessType !== undefined) updateData.businessType = businessType;
+      if (registrationNumber !== undefined) updateData.registrationNumber = registrationNumber;
+      if (address !== undefined) updateData.address = address;
+      if (goodsSupplied !== undefined) updateData.goodsSupplied = goodsSupplied;
+      if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
+      if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
+      if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
+      const updated = await storage.updateSupplier(req.params.id, updateData);
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/affiliates/:id/edit", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, address, bankName, accountNumber, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      const updateData: any = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (surname !== undefined) updateData.surname = surname;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (address !== undefined) updateData.address = address;
+      if (bankName !== undefined) updateData.bankName = bankName;
+      if (accountNumber !== undefined) updateData.accountNumber = accountNumber;
+      if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
+      if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
+      if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
+      const updated = await storage.updateAffiliate(req.params.id, updateData);
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/members", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, password, plan, address, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      if (!fullName || !surname || !phone || !password) {
+        return res.status(400).json({ message: "Full name, surname, phone, and password are required" });
+      }
+      const existing = await storage.getMemberByPhone(phone);
+      if (existing) {
+        return res.status(400).json({ message: "Phone number already registered" });
+      }
+      const trackingNumber = generateTrackingNumber();
+      const planInfo = plan ? Object.values(PLANS).find(p => p.name === plan) : null;
+      const member = await storage.createMember({
+        trackingNumber,
+        fullName,
+        surname,
+        email: email || "",
+        phone,
+        password: hashPassword(password),
+        plan: plan || null,
+        planAmount: planInfo ? planInfo.amount : null,
+        adminFee: planInfo ? planInfo.adminFee : null,
+        joinMonth: plan ? new Date().getMonth() + 1 : null,
+        joinYear: plan ? new Date().getFullYear() : null,
+        address: address || null,
+        referredByAffiliate: null,
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
+      });
+      await storage.updateMemberStatus(member.id, "active");
+      const updated = await storage.getMemberById(member.id);
+      res.json(stripPassword(updated!));
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/suppliers", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, password, businessName, businessType, registrationNumber, address, goodsSupplied, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      if (!fullName || !surname || !email || !phone || !password || !businessName || !businessType || !address) {
+        return res.status(400).json({ message: "Required fields missing" });
+      }
+      const existing = await storage.getSupplierByPhone(phone);
+      if (existing) {
+        return res.status(400).json({ message: "Phone number already registered" });
+      }
+      const trackingNumber = generateSupplierTrackingNumber();
+      const supplier = await storage.createSupplier({
+        trackingNumber,
+        fullName,
+        surname,
+        email,
+        phone,
+        password: hashPassword(password),
+        businessName,
+        businessType,
+        registrationNumber: registrationNumber || null,
+        address,
+        goodsSupplied: goodsSupplied || [],
+        agreedToTerms: true,
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
+      });
+      const updated = await storage.updateSupplier(supplier.id, { status: "approved" });
+      const { password: _, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/affiliates", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { fullName, surname, email, phone, password, address, bankName, accountNumber, nextOfKinName, nextOfKinPhone, nextOfKinRelationship } = req.body;
+      if (!fullName || !surname || !email || !phone || !password) {
+        return res.status(400).json({ message: "Required fields missing" });
+      }
+      const existing = await storage.getAffiliateByPhone(phone);
+      if (existing) {
+        return res.status(400).json({ message: "Phone number already registered" });
+      }
+      const trackingNumber = generateAffiliateTrackingNumber();
+      const affiliateCode = generateAffiliateCode();
+      const affiliate = await storage.createAffiliate({
+        trackingNumber,
+        affiliateCode,
+        fullName,
+        surname,
+        email,
+        phone,
+        password: hashPassword(password),
+        address: address || null,
+        bankName: bankName || null,
+        accountNumber: accountNumber || null,
+        agreedToTerms: true,
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
+      });
+      const updated = await storage.updateAffiliate(affiliate.id, { status: "approved" });
+      const { password: _, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
     }
   });
 

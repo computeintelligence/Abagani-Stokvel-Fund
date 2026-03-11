@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MONTHS, PLANS } from "@shared/schema";
@@ -13,12 +15,14 @@ import type { Member, Payment, Child } from "@shared/schema";
 import {
   Shield, Users, CheckCircle, CreditCard, Clock, Moon, Sun,
   LogOut, Download, Trash2, Search, Mail, FileText, Eye,
-  Link2, Package, XCircle, UserCheck, RefreshCw
+  Link2, Package, XCircle, UserCheck, RefreshCw, Edit2, Plus
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-provider";
 import { Footer } from "@/components/footer";
 import { StokvelLogo } from "@/components/navbar";
 import type { Supplier, Affiliate } from "@shared/schema";
+
+const KIN_RELATIONSHIPS = ["Parent", "Spouse", "Sibling", "Child", "Other"];
 
 const ADMIN_CODE = "ABANGANI26";
 
@@ -114,6 +118,13 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
   const [search, setSearch] = useState("");
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
   const [proofDialogUrl, setProofDialogUrl] = useState<string | null>(null);
+
+  const [editMember, setEditMember] = useState<(Member & { children: Child[]; payments: Payment[] }) | null>(null);
+  const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
+  const [editAffiliate, setEditAffiliate] = useState<Affiliate | null>(null);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [addSupplierOpen, setAddSupplierOpen] = useState(false);
+  const [addAffiliateOpen, setAddAffiliateOpen] = useState(false);
 
   const { data: stats } = useQuery<{
     totalMembers: number;
@@ -240,6 +251,81 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
       adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
       toast({ title: "Affiliate deleted" });
     },
+  });
+
+  const editMemberMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      await adminFetch(`/api/admin/members/${id}/edit`, { method: "PATCH", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      setEditMember(null);
+      toast({ title: "Member updated" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to update member", description: err.message, variant: "destructive" }),
+  });
+
+  const editSupplierMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      await adminFetch(`/api/admin/suppliers/${id}/edit`, { method: "PATCH", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/suppliers"] });
+      setEditSupplier(null);
+      toast({ title: "Supplier updated" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to update supplier", description: err.message, variant: "destructive" }),
+  });
+
+  const editAffiliateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      await adminFetch(`/api/admin/affiliates/${id}/edit`, { method: "PATCH", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      setEditAffiliate(null);
+      toast({ title: "Affiliate updated" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to update affiliate", description: err.message, variant: "destructive" }),
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await adminFetch("/api/admin/members", { method: "POST", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setAddMemberOpen(false);
+      toast({ title: "Member added" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to add member", description: err.message, variant: "destructive" }),
+  });
+
+  const addSupplierMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await adminFetch("/api/admin/suppliers", { method: "POST", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/suppliers"] });
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setAddSupplierOpen(false);
+      toast({ title: "Supplier added" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to add supplier", description: err.message, variant: "destructive" }),
+  });
+
+  const addAffiliateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await adminFetch("/api/admin/affiliates", { method: "POST", body: JSON.stringify(data) });
+    },
+    onSuccess: () => {
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      adminQueryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setAddAffiliateOpen(false);
+      toast({ title: "Affiliate added" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to add affiliate", description: err.message, variant: "destructive" }),
   });
 
   const handlePdfExport = async () => {
@@ -400,6 +486,11 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
           </TabsList>
 
           <TabsContent value="members" className="space-y-3 mt-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setAddMemberOpen(true)} data-testid="button-add-member">
+                <Plus className="h-4 w-4 mr-1" /> Add Member
+              </Button>
+            </div>
             {filteredMembers.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground" data-testid="text-no-members">No members found</Card>
             ) : (
@@ -415,6 +506,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                   onApprove={() => updateMemberStatusMutation.mutate({ id: m.id, status: "active" })}
                   onReject={() => updateMemberStatusMutation.mutate({ id: m.id, status: "suspended" })}
                   isUpdatingStatus={updateMemberStatusMutation.isPending}
+                  onEdit={() => setEditMember(m)}
                 />
               ))
             )}
@@ -522,6 +614,11 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
           </TabsContent>
 
           <TabsContent value="suppliers" className="space-y-3 mt-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setAddSupplierOpen(true)} data-testid="button-add-supplier">
+                <Plus className="h-4 w-4 mr-1" /> Add Supplier
+              </Button>
+            </div>
             {!suppliers || suppliers.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground" data-testid="text-no-suppliers">No suppliers registered</Card>
             ) : (
@@ -584,6 +681,14 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => setEditSupplier(s)}
+                        data-testid={`button-edit-supplier-${s.id}`}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => {
                           if (confirm("Delete this supplier?")) deleteSupplierMutation.mutate(s.id);
                         }}
@@ -599,6 +704,11 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
           </TabsContent>
 
           <TabsContent value="affiliates" className="space-y-3 mt-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setAddAffiliateOpen(true)} data-testid="button-add-affiliate">
+                <Plus className="h-4 w-4 mr-1" /> Add Affiliate
+              </Button>
+            </div>
             {!affiliatesData || affiliatesData.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground" data-testid="text-no-affiliates">No affiliates registered</Card>
             ) : (
@@ -678,6 +788,14 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => setEditAffiliate(a)}
+                        data-testid={`button-edit-affiliate-${a.id}`}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => {
                           if (confirm("Delete this affiliate?")) deleteAffiliateMutation.mutate(a.id);
                         }}
@@ -732,12 +850,63 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
         </DialogContent>
       </Dialog>
 
+      {editMember && (
+        <EditMemberDialog
+          member={editMember}
+          open={!!editMember}
+          onClose={() => setEditMember(null)}
+          onSave={(data) => editMemberMutation.mutate({ id: editMember.id, data })}
+          isPending={editMemberMutation.isPending}
+        />
+      )}
+
+      {editSupplier && (
+        <EditSupplierDialog
+          supplier={editSupplier}
+          open={!!editSupplier}
+          onClose={() => setEditSupplier(null)}
+          onSave={(data) => editSupplierMutation.mutate({ id: editSupplier.id, data })}
+          isPending={editSupplierMutation.isPending}
+        />
+      )}
+
+      {editAffiliate && (
+        <EditAffiliateDialog
+          affiliate={editAffiliate}
+          open={!!editAffiliate}
+          onClose={() => setEditAffiliate(null)}
+          onSave={(data) => editAffiliateMutation.mutate({ id: editAffiliate.id, data })}
+          isPending={editAffiliateMutation.isPending}
+        />
+      )}
+
+      <AddMemberDialog
+        open={addMemberOpen}
+        onClose={() => setAddMemberOpen(false)}
+        onSave={(data) => addMemberMutation.mutate(data)}
+        isPending={addMemberMutation.isPending}
+      />
+
+      <AddSupplierDialog
+        open={addSupplierOpen}
+        onClose={() => setAddSupplierOpen(false)}
+        onSave={(data) => addSupplierMutation.mutate(data)}
+        isPending={addSupplierMutation.isPending}
+      />
+
+      <AddAffiliateDialog
+        open={addAffiliateOpen}
+        onClose={() => setAddAffiliateOpen(false)}
+        onSave={(data) => addAffiliateMutation.mutate(data)}
+        isPending={addAffiliateMutation.isPending}
+      />
+
       <Footer />
     </div>
   );
 }
 
-function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onReject, isUpdatingStatus }: {
+function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onReject, isUpdatingStatus, onEdit }: {
   member: Member & { children: Child[]; payments: Payment[] };
   expanded: boolean;
   onToggleExpand: () => void;
@@ -745,6 +914,7 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onR
   onApprove: () => void;
   onReject: () => void;
   isUpdatingStatus: boolean;
+  onEdit: () => void;
 }) {
   const plan = Object.values(PLANS).find((p) => p.name === member.plan);
   const paidCount = member.payments.filter((p) => p.status === "paid" || p.status === "verified").length;
@@ -802,6 +972,9 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onR
               </Button>
             </>
           )}
+          <Button size="icon" variant="ghost" onClick={onEdit} data-testid={`button-edit-member-${member.id}`}>
+            <Edit2 className="h-4 w-4" />
+          </Button>
           <Button size="icon" variant="ghost" onClick={onToggleExpand} data-testid={`button-view-member-${member.id}`}>
             <Eye className="h-4 w-4" />
           </Button>
@@ -852,5 +1025,483 @@ function MemberCard({ member, expanded, onToggleExpand, onDelete, onApprove, onR
         </div>
       )}
     </Card>
+  );
+}
+
+function NextOfKinFields({ values, onChange }: { values: { nextOfKinName: string; nextOfKinPhone: string; nextOfKinRelationship: string }; onChange: (field: string, value: string) => void }) {
+  return (
+    <>
+      <div className="space-y-1">
+        <Label>Next of Kin Name</Label>
+        <Input value={values.nextOfKinName} onChange={(e) => onChange("nextOfKinName", e.target.value)} data-testid="input-next-of-kin-name" />
+      </div>
+      <div className="space-y-1">
+        <Label>Next of Kin Phone</Label>
+        <Input value={values.nextOfKinPhone} onChange={(e) => onChange("nextOfKinPhone", e.target.value)} data-testid="input-next-of-kin-phone" />
+      </div>
+      <div className="space-y-1">
+        <Label>Next of Kin Relationship</Label>
+        <Select value={values.nextOfKinRelationship} onValueChange={(v) => onChange("nextOfKinRelationship", v)}>
+          <SelectTrigger data-testid="select-next-of-kin-relationship">
+            <SelectValue placeholder="Select relationship" />
+          </SelectTrigger>
+          <SelectContent>
+            {KIN_RELATIONSHIPS.map((r) => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  );
+}
+
+function EditMemberDialog({ member, open, onClose, onSave, isPending }: {
+  member: Member & { children: Child[]; payments: Payment[] };
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: member.fullName,
+    surname: member.surname,
+    email: member.email || "",
+    phone: member.phone,
+    address: member.address || "",
+    plan: member.plan || "",
+    planAmount: member.planAmount?.toString() || "",
+    nextOfKinName: member.nextOfKinName || "",
+    nextOfKinPhone: member.nextOfKinPhone || "",
+    nextOfKinRelationship: member.nextOfKinRelationship || "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-member">
+        <DialogHeader>
+          <DialogTitle>Edit Member</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-edit-member-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-edit-member-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-edit-member-email" />
+          </div>
+          <div className="space-y-1">
+            <Label>Phone</Label>
+            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-edit-member-phone" />
+          </div>
+          <div className="space-y-1">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-edit-member-address" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Plan</Label>
+              <Select value={form.plan} onValueChange={(v) => set("plan", v)}>
+                <SelectTrigger data-testid="select-edit-member-plan">
+                  <SelectValue placeholder="Select plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(PLANS).map((p) => (
+                    <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Plan Amount (R)</Label>
+              <Input type="number" value={form.planAmount} onChange={(e) => set("planAmount", e.target.value)} data-testid="input-edit-member-plan-amount" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave({ ...form, planAmount: form.planAmount ? parseInt(form.planAmount) : undefined })} disabled={isPending} data-testid="button-save-edit-member">
+            {isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditSupplierDialog({ supplier, open, onClose, onSave, isPending }: {
+  supplier: Supplier;
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: supplier.fullName,
+    surname: supplier.surname,
+    email: supplier.email,
+    phone: supplier.phone,
+    businessName: supplier.businessName,
+    businessType: supplier.businessType,
+    registrationNumber: supplier.registrationNumber || "",
+    address: supplier.address,
+    goodsSupplied: supplier.goodsSupplied?.join(", ") || "",
+    nextOfKinName: supplier.nextOfKinName || "",
+    nextOfKinPhone: supplier.nextOfKinPhone || "",
+    nextOfKinRelationship: supplier.nextOfKinRelationship || "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-supplier">
+        <DialogHeader>
+          <DialogTitle>Edit Supplier</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-edit-supplier-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-edit-supplier-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-edit-supplier-email" />
+          </div>
+          <div className="space-y-1">
+            <Label>Phone</Label>
+            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-edit-supplier-phone" />
+          </div>
+          <div className="space-y-1">
+            <Label>Business Name</Label>
+            <Input value={form.businessName} onChange={(e) => set("businessName", e.target.value)} data-testid="input-edit-supplier-business-name" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Business Type</Label>
+              <Input value={form.businessType} onChange={(e) => set("businessType", e.target.value)} data-testid="input-edit-supplier-business-type" />
+            </div>
+            <div className="space-y-1">
+              <Label>Registration Number</Label>
+              <Input value={form.registrationNumber} onChange={(e) => set("registrationNumber", e.target.value)} data-testid="input-edit-supplier-reg-number" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-edit-supplier-address" />
+          </div>
+          <div className="space-y-1">
+            <Label>Goods Supplied (comma separated)</Label>
+            <Input value={form.goodsSupplied} onChange={(e) => set("goodsSupplied", e.target.value)} data-testid="input-edit-supplier-goods" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave({ ...form, goodsSupplied: form.goodsSupplied.split(",").map((s) => s.trim()).filter(Boolean) })} disabled={isPending} data-testid="button-save-edit-supplier">
+            {isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditAffiliateDialog({ affiliate, open, onClose, onSave, isPending }: {
+  affiliate: Affiliate;
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: affiliate.fullName,
+    surname: affiliate.surname,
+    email: affiliate.email,
+    phone: affiliate.phone,
+    address: affiliate.address || "",
+    bankName: affiliate.bankName || "",
+    accountNumber: affiliate.accountNumber || "",
+    nextOfKinName: affiliate.nextOfKinName || "",
+    nextOfKinPhone: affiliate.nextOfKinPhone || "",
+    nextOfKinRelationship: affiliate.nextOfKinRelationship || "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-affiliate">
+        <DialogHeader>
+          <DialogTitle>Edit Affiliate</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-edit-affiliate-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-edit-affiliate-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-edit-affiliate-email" />
+          </div>
+          <div className="space-y-1">
+            <Label>Phone</Label>
+            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-edit-affiliate-phone" />
+          </div>
+          <div className="space-y-1">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-edit-affiliate-address" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Bank Name</Label>
+              <Input value={form.bankName} onChange={(e) => set("bankName", e.target.value)} data-testid="input-edit-affiliate-bank" />
+            </div>
+            <div className="space-y-1">
+              <Label>Account Number</Label>
+              <Input value={form.accountNumber} onChange={(e) => set("accountNumber", e.target.value)} data-testid="input-edit-affiliate-account" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave(form)} disabled={isPending} data-testid="button-save-edit-affiliate">
+            {isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddMemberDialog({ open, onClose, onSave, isPending }: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: "", surname: "", email: "", phone: "", password: "",
+    plan: "", address: "",
+    nextOfKinName: "", nextOfKinPhone: "", nextOfKinRelationship: "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-add-member">
+        <DialogHeader>
+          <DialogTitle>Add Member</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name *</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-add-member-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname *</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-add-member-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-add-member-email" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Phone *</Label>
+              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-add-member-phone" />
+            </div>
+            <div className="space-y-1">
+              <Label>Password *</Label>
+              <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} data-testid="input-add-member-password" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Plan</Label>
+            <Select value={form.plan} onValueChange={(v) => set("plan", v)}>
+              <SelectTrigger data-testid="select-add-member-plan">
+                <SelectValue placeholder="Select plan (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(PLANS).map((p) => (
+                  <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-add-member-address" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave(form)} disabled={isPending || !form.fullName || !form.surname || !form.phone || !form.password} data-testid="button-save-add-member">
+            {isPending ? "Adding..." : "Add Member"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddSupplierDialog({ open, onClose, onSave, isPending }: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: "", surname: "", email: "", phone: "", password: "",
+    businessName: "", businessType: "", registrationNumber: "", address: "", goodsSupplied: "",
+    nextOfKinName: "", nextOfKinPhone: "", nextOfKinRelationship: "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-add-supplier">
+        <DialogHeader>
+          <DialogTitle>Add Supplier</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name *</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-add-supplier-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname *</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-add-supplier-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email *</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-add-supplier-email" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Phone *</Label>
+              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-add-supplier-phone" />
+            </div>
+            <div className="space-y-1">
+              <Label>Password *</Label>
+              <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} data-testid="input-add-supplier-password" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Business Name *</Label>
+            <Input value={form.businessName} onChange={(e) => set("businessName", e.target.value)} data-testid="input-add-supplier-business-name" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Business Type *</Label>
+              <Input value={form.businessType} onChange={(e) => set("businessType", e.target.value)} data-testid="input-add-supplier-business-type" />
+            </div>
+            <div className="space-y-1">
+              <Label>Registration Number</Label>
+              <Input value={form.registrationNumber} onChange={(e) => set("registrationNumber", e.target.value)} data-testid="input-add-supplier-reg-number" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Address *</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-add-supplier-address" />
+          </div>
+          <div className="space-y-1">
+            <Label>Goods Supplied (comma separated)</Label>
+            <Input value={form.goodsSupplied} onChange={(e) => set("goodsSupplied", e.target.value)} data-testid="input-add-supplier-goods" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave({ ...form, goodsSupplied: form.goodsSupplied.split(",").map((s) => s.trim()).filter(Boolean) })} disabled={isPending || !form.fullName || !form.surname || !form.email || !form.phone || !form.password || !form.businessName || !form.businessType || !form.address} data-testid="button-save-add-supplier">
+            {isPending ? "Adding..." : "Add Supplier"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddAffiliateDialog({ open, onClose, onSave, isPending }: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: "", surname: "", email: "", phone: "", password: "",
+    address: "", bankName: "", accountNumber: "",
+    nextOfKinName: "", nextOfKinPhone: "", nextOfKinRelationship: "",
+  });
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-add-affiliate">
+        <DialogHeader>
+          <DialogTitle>Add Affiliate</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Full Name *</Label>
+              <Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} data-testid="input-add-affiliate-fullname" />
+            </div>
+            <div className="space-y-1">
+              <Label>Surname *</Label>
+              <Input value={form.surname} onChange={(e) => set("surname", e.target.value)} data-testid="input-add-affiliate-surname" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Email *</Label>
+            <Input value={form.email} onChange={(e) => set("email", e.target.value)} data-testid="input-add-affiliate-email" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Phone *</Label>
+              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} data-testid="input-add-affiliate-phone" />
+            </div>
+            <div className="space-y-1">
+              <Label>Password *</Label>
+              <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} data-testid="input-add-affiliate-password" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} data-testid="input-add-affiliate-address" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Bank Name</Label>
+              <Input value={form.bankName} onChange={(e) => set("bankName", e.target.value)} data-testid="input-add-affiliate-bank" />
+            </div>
+            <div className="space-y-1">
+              <Label>Account Number</Label>
+              <Input value={form.accountNumber} onChange={(e) => set("accountNumber", e.target.value)} data-testid="input-add-affiliate-account" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground pt-2">Next of Kin</p>
+          <NextOfKinFields values={form} onChange={set} />
+          <Button className="w-full" onClick={() => onSave(form)} disabled={isPending || !form.fullName || !form.surname || !form.email || !form.phone || !form.password} data-testid="button-save-add-affiliate">
+            {isPending ? "Adding..." : "Add Affiliate"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

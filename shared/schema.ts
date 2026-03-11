@@ -18,6 +18,9 @@ export const members = pgTable("members", {
   joinYear: integer("join_year"),
   password: text("password").notNull(),
   referredByAffiliate: varchar("referred_by_affiliate"),
+  nextOfKinName: text("next_of_kin_name"),
+  nextOfKinPhone: text("next_of_kin_phone"),
+  nextOfKinRelationship: text("next_of_kin_relationship"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -82,6 +85,9 @@ export const signupSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(10),
   password: z.string().min(6),
+  nextOfKinName: z.string().optional(),
+  nextOfKinPhone: z.string().optional(),
+  nextOfKinRelationship: z.string().optional(),
 });
 
 export type SignupData = z.infer<typeof signupSchema>;
@@ -150,6 +156,9 @@ export const suppliers = pgTable("suppliers", {
   registrationNumber: text("registration_number"),
   address: text("address").notNull(),
   goodsSupplied: text("goods_supplied").array().notNull(),
+  nextOfKinName: text("next_of_kin_name"),
+  nextOfKinPhone: text("next_of_kin_phone"),
+  nextOfKinRelationship: text("next_of_kin_relationship"),
   agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
   status: text("status").notNull().default("approved"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -175,6 +184,9 @@ export const supplierSignupSchema = z.object({
   registrationNumber: z.string().optional(),
   address: z.string().min(1),
   goodsSupplied: z.array(z.string()).min(1),
+  nextOfKinName: z.string().optional(),
+  nextOfKinPhone: z.string().optional(),
+  nextOfKinRelationship: z.string().optional(),
   agreedToTerms: z.boolean(),
 });
 
@@ -197,6 +209,9 @@ export const affiliates = pgTable("affiliates", {
   address: text("address"),
   bankName: text("bank_name"),
   accountNumber: text("account_number"),
+  nextOfKinName: text("next_of_kin_name"),
+  nextOfKinPhone: text("next_of_kin_phone"),
+  nextOfKinRelationship: text("next_of_kin_relationship"),
   agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
   status: text("status").notNull().default("approved"),
   totalClicks: integer("total_clicks").notNull().default(0),
@@ -247,6 +262,9 @@ export const affiliateSignupSchema = z.object({
   address: z.string().optional(),
   bankName: z.string().optional(),
   accountNumber: z.string().optional(),
+  nextOfKinName: z.string().optional(),
+  nextOfKinPhone: z.string().optional(),
+  nextOfKinRelationship: z.string().optional(),
   agreedToTerms: z.boolean(),
 });
 

@@ -9,9 +9,12 @@ import { useAuth } from "@/lib/auth";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Shield, User, Edit2, Save, X, Copy, ArrowLeft, LogOut
 } from "lucide-react";
+
+const RELATIONSHIP_OPTIONS = ["Parent", "Spouse", "Sibling", "Child", "Other"];
 
 export default function Profile() {
   const { member, logout, isLoading: authLoading, refresh } = useAuth();
@@ -25,6 +28,9 @@ export default function Profile() {
   const [addressCity, setAddressCity] = useState("");
   const [addressProvince, setAddressProvince] = useState("");
   const [addressPostalCode, setAddressPostalCode] = useState("");
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
   const [saving, setSaving] = useState(false);
 
   if (authLoading) {
@@ -51,6 +57,9 @@ export default function Profile() {
     setAddressCity(addrParts[1] || "");
     setAddressProvince(addrParts[2] || "");
     setAddressPostalCode(addrParts[3] || "");
+    setNextOfKinName(member.nextOfKinName || "");
+    setNextOfKinPhone(member.nextOfKinPhone || "");
+    setNextOfKinRelationship(member.nextOfKinRelationship || "");
     setEditing(true);
   };
 
@@ -62,6 +71,9 @@ export default function Profile() {
         surname,
         phone,
         address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", "),
+        nextOfKinName: nextOfKinName || null,
+        nextOfKinPhone: nextOfKinPhone || null,
+        nextOfKinRelationship: nextOfKinRelationship || null,
       });
       await refresh();
       setEditing(false);
@@ -191,6 +203,42 @@ export default function Profile() {
                   data-testid="input-profile-postal-code"
                 />
               </div>
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-semibold mb-3">Next of Kin</p>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Full Name</Label>
+                    <Input
+                      value={nextOfKinName}
+                      onChange={(e) => setNextOfKinName(e.target.value)}
+                      placeholder="Next of kin full name"
+                      data-testid="input-profile-nok-name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Phone Number</Label>
+                    <Input
+                      value={nextOfKinPhone}
+                      onChange={(e) => setNextOfKinPhone(e.target.value)}
+                      placeholder="Next of kin phone number"
+                      data-testid="input-profile-nok-phone"
+                    />
+                  </div>
+                  <div>
+                    <Label>Relationship</Label>
+                    <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                      <SelectTrigger data-testid="select-profile-nok-relationship">
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RELATIONSHIP_OPTIONS.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button onClick={handleSave} disabled={saving || !fullName.trim() || !surname.trim() || !phone.trim()} data-testid="button-save-profile">
                   <Save className="h-4 w-4 mr-2" />
@@ -238,6 +286,25 @@ export default function Profile() {
                   {member.status}
                 </Badge>
               </div>
+              {(member.nextOfKinName || member.nextOfKinPhone || member.nextOfKinRelationship) && (
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-semibold mb-3">Next of Kin</p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Name</p>
+                      <p className="font-medium" data-testid="text-profile-nok-name">{member.nextOfKinName || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium" data-testid="text-profile-nok-phone">{member.nextOfKinPhone || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Relationship</p>
+                      <p className="font-medium" data-testid="text-profile-nok-relationship">{member.nextOfKinRelationship || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Card>

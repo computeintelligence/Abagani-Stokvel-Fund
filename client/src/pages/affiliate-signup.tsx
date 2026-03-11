@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAffiliateAuth } from "@/lib/affiliate-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import {
@@ -37,6 +38,10 @@ export default function AffiliateSignup() {
   const [addressProvince, setAddressProvince] = useState("");
   const [addressPostalCode, setAddressPostalCode] = useState("");
 
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
+
   const [agreed, setAgreed] = useState(false);
 
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -62,6 +67,9 @@ export default function AffiliateSignup() {
         phone,
         password,
         address: [streetAddress, addressCity, addressProvince, addressPostalCode].filter(Boolean).join(", ") || undefined,
+        nextOfKinName: nextOfKinName || undefined,
+        nextOfKinPhone: nextOfKinPhone || undefined,
+        nextOfKinRelationship: nextOfKinRelationship || undefined,
         agreedToTerms: agreed,
       });
       const data = await res.json();
@@ -165,6 +173,32 @@ export default function AffiliateSignup() {
                 {confirmPassword && password !== confirmPassword && (
                   <p className="text-xs text-destructive mt-1">Passwords do not match</p>
                 )}
+              </div>
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-semibold mb-3">Next of Kin (Optional)</p>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Full Name</Label>
+                    <Input value={nextOfKinName} onChange={(e) => setNextOfKinName(e.target.value)} placeholder="Next of kin full name" data-testid="input-affiliate-nok-name" />
+                  </div>
+                  <div>
+                    <Label>Phone Number</Label>
+                    <Input value={nextOfKinPhone} onChange={(e) => setNextOfKinPhone(e.target.value)} placeholder="Next of kin phone number" data-testid="input-affiliate-nok-phone" />
+                  </div>
+                  <div>
+                    <Label>Relationship</Label>
+                    <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                      <SelectTrigger data-testid="select-affiliate-nok-relationship">
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Parent", "Spouse", "Sibling", "Child", "Other"].map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

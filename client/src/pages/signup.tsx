@@ -9,7 +9,10 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, UserPlus } from "lucide-react";
+
+const RELATIONSHIP_OPTIONS = ["Parent", "Spouse", "Sibling", "Child", "Other"];
 
 export default function SignUp() {
   const [, navigate] = useLocation();
@@ -21,6 +24,9 @@ export default function SignUp() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [nextOfKinName, setNextOfKinName] = useState("");
+  const [nextOfKinPhone, setNextOfKinPhone] = useState("");
+  const [nextOfKinRelationship, setNextOfKinRelationship] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const justSignedUp = useRef(false);
 
@@ -58,6 +64,9 @@ export default function SignUp() {
         email,
         phone,
         password,
+        nextOfKinName: nextOfKinName || undefined,
+        nextOfKinPhone: nextOfKinPhone || undefined,
+        nextOfKinRelationship: nextOfKinRelationship || undefined,
         affiliateRef,
       });
       const memberData = await res.json();
@@ -147,6 +156,44 @@ export default function SignUp() {
               {confirmPassword && password !== confirmPassword && (
                 <p className="text-xs text-destructive mt-1">Passwords do not match</p>
               )}
+            </div>
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-semibold mb-3">Next of Kin (Optional)</p>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="nextOfKinName">Full Name</Label>
+                  <Input
+                    id="nextOfKinName"
+                    value={nextOfKinName}
+                    onChange={(e) => setNextOfKinName(e.target.value)}
+                    placeholder="Next of kin full name"
+                    data-testid="input-signup-nok-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nextOfKinPhone">Phone Number</Label>
+                  <Input
+                    id="nextOfKinPhone"
+                    value={nextOfKinPhone}
+                    onChange={(e) => setNextOfKinPhone(e.target.value)}
+                    placeholder="Next of kin phone number"
+                    data-testid="input-signup-nok-phone"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nextOfKinRelationship">Relationship</Label>
+                  <Select value={nextOfKinRelationship} onValueChange={setNextOfKinRelationship}>
+                    <SelectTrigger data-testid="select-signup-nok-relationship">
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELATIONSHIP_OPTIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || !canSubmit} data-testid="button-signup-submit">
               <UserPlus className="h-4 w-4 mr-2" />

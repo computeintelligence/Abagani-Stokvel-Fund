@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-function HeroSection() {
+function HeroSection({ activeMembers }: { activeMembers: number | undefined }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-primary/10 dark:via-background dark:to-primary/5">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
@@ -54,7 +55,7 @@ function HeroSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-16 max-w-3xl mx-auto">
           {[
-            { icon: Users, label: "Growing Community", value: "500+ Families" },
+            { icon: Users, label: "Active Members", value: activeMembers !== undefined ? `${activeMembers}+ Active Members` : "Growing Community" },
             { icon: Heart, label: "Years of Trust", value: "Since 2023" },
             { icon: TrendingUp, label: "Children Supported", value: "1000+" },
           ].map((stat) => (
@@ -223,10 +224,14 @@ export default function Home() {
     }
   }, []);
 
+  const { data: stats } = useQuery<{ activeMembers: number }>({
+    queryKey: ["/api/public/stats"],
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <HeroSection />
+      <HeroSection activeMembers={stats?.activeMembers} />
       <HowItWorksSection />
       <PricingSection />
       <CTASection />
