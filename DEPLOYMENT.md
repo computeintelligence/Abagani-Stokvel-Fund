@@ -11,7 +11,7 @@ Vercel (client)
 2. Use the project root `Abangani-Stokvel-Fund/Abangani-Stokvel-Fund`.
 3. Configure Build & Output Settings in the Vercel dashboard:
    - Build Command: `npm run build:client`
-   - Output Directory: `client/dist/public`
+   - Output Directory: `dist/public`
    - Root Directory: `.`
 4. Remove any legacy `builds` block from `vercel.json`; this repository now uses dashboard build settings instead of repository-level `builds` config.
 5. Environment variables (set in Vercel):
