@@ -1,0 +1,11 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K2:07:11 PM [express] serving on port 5000
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+2:07:21 PM [express] GET /api/auth/me 401 in 5ms :: {"message":"Not authenticated"}
+2:07:21 PM [express] GET /api/supplier/me 401 in 3ms :: {"message":"Not authenticated"}
+2:07:21 PM [express] GET /api/affiliate/me 401 in 3ms :: {"message":"Not authenticated"}
+2:07:21 PM [express] GET /api/public/stats 200 in 40ms :: {"activeMembers":5}
