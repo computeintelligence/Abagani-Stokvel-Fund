@@ -7,6 +7,7 @@
     "dev": "DOTENV_CONFIG_PATH=.env.local NODE_ENV=development tsx -r dotenv/config server/index.ts",
     "build": "tsx script/build.ts",
     "build:client": "vite build",
+    "build:vercel": "npm run build:client",
     "start": "DOTENV_CONFIG_PATH=.env.local NODE_ENV=production node -r dotenv/config dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push"
