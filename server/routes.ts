@@ -84,6 +84,11 @@ function validateResetCode(key: string, code: string): boolean {
   return true;
 }
 
+function paramToString(p: string | string[] | undefined): string {
+  if (!p) return "";
+  return Array.isArray(p) ? p[0] : p;
+}
+
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   const memberId = (req.session as any)?.memberId;
   if (!memberId) {
@@ -95,7 +100,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 function requireOwnMember(req: Request, res: Response, next: NextFunction) {
   const sessionMemberId = (req.session as any)?.memberId;
-  if (!sessionMemberId || sessionMemberId !== req.params.id) {
+  if (!sessionMemberId || sessionMemberId !== paramToString(req.params.id)) {
     return res.status(403).json({ message: "Unauthorized" });
   }
   next();
@@ -167,7 +172,7 @@ export async function registerRoutes(
     if (!memberId && adminCode !== ADMIN_CODE) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    const filename = path.basename(req.params.filename);
+    const filename = path.basename(paramToString(req.params.filename));
     const filePath = path.join(uploadsDir, filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
     res.sendFile(filePath);
@@ -379,7 +384,7 @@ export async function registerRoutes(
       if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
       if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
       if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
-      const updated = await storage.updateMember(req.params.id, updateData);
+      const updated = await storage.updateMember(paramToString(req.params.id), updateData);
       res.json(stripPassword(updated));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -387,19 +392,19 @@ export async function registerRoutes(
   });
 
   app.get("/api/members/:id/children", requireAuth, requireOwnMember, async (req, res) => {
-    const children = await storage.getChildrenByMember(req.params.id);
+    const children = await storage.getChildrenByMember(paramToString(req.params.id));
     res.json(children);
   });
 
   app.get("/api/members/:id/payments", requireAuth, requireOwnMember, async (req, res) => {
-    const payments = await storage.getPaymentsByMember(req.params.id);
+    const payments = await storage.getPaymentsByMember(paramToString(req.params.id));
     res.json(payments);
   });
 
   app.post("/api/members/:id/children", requireAuth, requireOwnMember, async (req, res) => {
     try {
       const child = await storage.createChild({
-        memberId: req.params.id,
+        memberId: paramToString(req.params.id),
         fullName: req.body.fullName,
         school: req.body.school,
         grade: req.body.grade,
@@ -416,11 +421,11 @@ export async function registerRoutes(
     try {
       const memberId = (req.session as any).memberId;
       const memberChildren = await storage.getChildrenByMember(memberId);
-      const child = memberChildren.find((c) => String(c.id) === req.params.id);
+      const child = memberChildren.find((c) => String(c.id) === paramToString(req.params.id));
       if (!child) {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      await storage.updateChild(req.params.id, req.body);
+      await storage.updateChild(paramToString(req.params.id), req.body);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -431,11 +436,11 @@ export async function registerRoutes(
     try {
       const memberId = (req.session as any).memberId;
       const memberChildren = await storage.getChildrenByMember(memberId);
-      const child = memberChildren.find((c) => String(c.id) === req.params.id);
+      const child = memberChildren.find((c) => String(c.id) === paramToString(req.params.id));
       if (!child) {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      await storage.deleteChild(req.params.id);
+      await storage.deleteChild(paramToString(req.params.id));
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -460,7 +465,7 @@ export async function registerRoutes(
       if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
         return res.status(400).json({ message: "Invalid month or year." });
       }
-      const memberPayments = await storage.getPaymentsByMember(req.params.id);
+      const memberPayments = await storage.getPaymentsByMember(paramToString(req.params.id));
       const payment = memberPayments.find((p) => p.month === monthNum && p.year === yearNum);
       if (!payment) {
         return res.status(404).json({ message: "Payment record not found" });
@@ -476,10 +481,10 @@ export async function registerRoutes(
   app.get("/api/members/:id/export", requireAuth, requireOwnMember, async (req, res) => {
     try {
       const format = req.query.format as string || "csv";
-      const member = await storage.getMemberById(req.params.id);
+      const member = await storage.getMemberById(paramToString(req.params.id));
       if (!member) return res.status(404).json({ message: "Member not found" });
 
-      const payments = await storage.getPaymentsByMember(req.params.id);
+      const payments = await storage.getPaymentsByMember(paramToString(req.params.id));
       const sorted = [...payments].sort((a, b) => a.month - b.month);
 
       if (format === "csv") {
@@ -549,7 +554,7 @@ export async function registerRoutes(
       if (!status || !["active", "suspended"].includes(status)) {
         return res.status(400).json({ message: "Status must be 'active' or 'suspended'" });
       }
-      await storage.updateMemberStatus(req.params.id, status);
+      await storage.updateMemberStatus(paramToString(req.params.id), status);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -558,7 +563,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/members/:id/approve", requireAdmin, async (req, res) => {
     try {
-      await storage.updateMemberStatus(req.params.id, "active");
+      await storage.updateMemberStatus(paramToString(req.params.id), "active");
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -567,7 +572,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/members/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteMember(req.params.id);
+      await storage.deleteMember(paramToString(req.params.id));
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -587,7 +592,7 @@ export async function registerRoutes(
       if (planAmount !== undefined) updateData.planAmount = planAmount;
       if (adminFee !== undefined) updateData.adminFee = adminFee;
       if (status !== undefined) updateData.status = status;
-      const updated = await storage.updateMember(req.params.id, updateData);
+      const updated = await storage.updateMember(paramToString(req.params.id), updateData);
       res.json(stripPassword(updated));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -597,8 +602,8 @@ export async function registerRoutes(
   app.post("/api/admin/payments/:id/verify", requireAdmin, async (req, res) => {
     try {
       const allPayments = await storage.getAllPayments();
-      const payment = allPayments.find(p => p.id === req.params.id);
-      await storage.updatePaymentStatus(req.params.id, "verified");
+      const payment = allPayments.find(p => p.id === paramToString(req.params.id));
+      await storage.updatePaymentStatus(paramToString(req.params.id), "verified");
       res.json({ ok: true });
 
       if (payment) {
@@ -625,7 +630,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/payments/:id/reject", requireAdmin, async (req, res) => {
     try {
-      await storage.updatePaymentStatus(req.params.id, "unpaid");
+      await storage.updatePaymentStatus(paramToString(req.params.id), "unpaid");
       res.json({ ok: true });
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -634,7 +639,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/members/:id/send-reminder", requireAdmin, async (req, res) => {
     try {
-      const member = await storage.getMemberById(req.params.id);
+      const member = await storage.getMemberById(paramToString(req.params.id));
       if (!member) return res.status(404).json({ message: "Member not found" });
       if (!member.email) return res.status(400).json({ message: "Member has no email" });
       const payments = await storage.getPaymentsByMember(member.id);
@@ -1030,7 +1035,7 @@ export async function registerRoutes(
 
   app.get("/api/affiliate/track/:code", async (req: Request, res: Response) => {
     try {
-      const affiliate = await storage.getAffiliateByCode(req.params.code);
+      const affiliate = await storage.getAffiliateByCode(paramToString(req.params.code));
       if (!affiliate) return res.status(404).json({ message: "Invalid affiliate link" });
       const ip = req.ip || req.headers["x-forwarded-for"] as string || "";
       const ua = req.headers["user-agent"] || "";
@@ -1096,7 +1101,7 @@ export async function registerRoutes(
       if (!["pending", "approved", "rejected"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
-      const updated = await storage.updateSupplier(req.params.id, { status });
+      const updated = await storage.updateSupplier(paramToString(req.params.id), { status });
       const { password, ...safe } = updated;
       const approved = status === "approved";
       sendSupplierApprovalEmail(updated.fullName, updated.email, updated.businessName, approved).catch(console.error);
@@ -1108,7 +1113,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/suppliers/:id", requireAdmin, async (req: Request, res: Response) => {
     try {
-      await storage.deleteSupplier(req.params.id);
+      await storage.deleteSupplier(paramToString(req.params.id));
       res.json({ message: "Supplier deleted" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1147,7 +1152,7 @@ export async function registerRoutes(
       if (!["pending", "approved", "rejected"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
-      const updated = await storage.updateAffiliate(req.params.id, { status });
+      const updated = await storage.updateAffiliate(paramToString(req.params.id), { status });
       const { password, ...safe } = updated;
       const approved = status === "approved";
       const affiliateLink = `${BASE_URL}/signup?ref=${updated.affiliateCode}`;
@@ -1160,7 +1165,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/affiliates/:id", requireAdmin, async (req: Request, res: Response) => {
     try {
-      await storage.deleteAffiliate(req.params.id);
+      await storage.deleteAffiliate(paramToString(req.params.id));
       res.json({ message: "Affiliate deleted" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1181,7 +1186,7 @@ export async function registerRoutes(
       if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
       if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
       if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
-      const updated = await storage.updateMember(req.params.id, updateData);
+      const updated = await storage.updateMember(paramToString(req.params.id), updateData);
       res.json(stripPassword(updated));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
@@ -1204,7 +1209,7 @@ export async function registerRoutes(
       if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
       if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
       if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
-      const updated = await storage.updateSupplier(req.params.id, updateData);
+      const updated = await storage.updateSupplier(paramToString(req.params.id), updateData);
       const { password, ...safe } = updated;
       res.json(safe);
     } catch (err: any) {
@@ -1226,7 +1231,7 @@ export async function registerRoutes(
       if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName;
       if (nextOfKinPhone !== undefined) updateData.nextOfKinPhone = nextOfKinPhone;
       if (nextOfKinRelationship !== undefined) updateData.nextOfKinRelationship = nextOfKinRelationship;
-      const updated = await storage.updateAffiliate(req.params.id, updateData);
+      const updated = await storage.updateAffiliate(paramToString(req.params.id), updateData);
       const { password, ...safe } = updated;
       res.json(safe);
     } catch (err: any) {

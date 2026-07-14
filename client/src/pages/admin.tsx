@@ -132,6 +132,8 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
     pending: number;
     totalRevenue: number;
     tierBreakdown: Record<string, number>;
+    totalSuppliers?: number;
+    totalAffiliates?: number;
   }>({ queryKey: ["/api/admin/stats"] });
 
   const { data: members } = useQuery<(Member & { children: Child[]; payments: Payment[] })[]>({
@@ -205,7 +207,7 @@ function AdminPanel({ toggleTheme, theme, onLogout }: { toggleTheme: () => void;
   });
 
   const { data: suppliers } = useQuery<Supplier[]>({ queryKey: ["/api/admin/suppliers"] });
-  const { data: affiliatesData } = useQuery<Affiliate[]>({ queryKey: ["/api/admin/affiliates"] });
+  const { data: affiliatesData } = useQuery<(Affiliate & { referredMembers?: (Member & { id: string })[] })[]>({ queryKey: ["/api/admin/affiliates"] });
 
   const updateSupplierStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {

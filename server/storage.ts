@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
 
     const tierBreakdown: Record<string, number> = {};
     for (const m of allMembers) {
-      const planName = m.plan;
+      const planName = m.plan || "No plan";
       tierBreakdown[planName] = (tierBreakdown[planName] || 0) + 1;
     }
 
